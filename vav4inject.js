@@ -3771,7 +3771,7 @@ function createModuleRow(name, mod, content) {
 		// === Toggle ClickGUI ===
 		let visible = false;
 		document.addEventListener("keydown", (e) => {
-			if (e.code === "Backslash") {
+			if (e.key === "Insert") { 
 				visible = !visible;
 
 				if (visible) {

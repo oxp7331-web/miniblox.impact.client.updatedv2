@@ -6,6 +6,7 @@ let dumpedVarNames = {};
 const storeName = "a" + crypto.randomUUID().replaceAll("-", "").substring(16);
 const vapeName = crypto.randomUUID().replaceAll("-", "").substring(16);
 const VERSION = "6.8.7";
+
 // ANTICHEAT HOOK
 function replaceAndCopyFunction(oldFunc, newFunc) {
 	return new Proxy(oldFunc, {
@@ -83,9 +84,9 @@ function modifyCode(text) {
 	'use strict';
 
 	// DUMPS
-    addDump('playerHealthDump', 'this\\.([a-zA-Z]+)=this\\.getMaxHealth\\(\\)');
-    addDump('entityHealthDump', 'this\\.([a-zA-Z]+)=h\\.getMaxHealth\\(\\)');
-    addDump('getHealthDump', 'getHealth\\(\\)\\{return this\\.([a-zA-Z]+)');
+	addDump('playerHealthDump', 'this\\.([a-zA-Z]+)=this\\.getMaxHealth\\(\\)');
+	addDump('entityHealthDump', 'this\\.([a-zA-Z]+)=h\\.getMaxHealth\\(\\)');
+	addDump('getHealthDump', 'getHealth\\(\\)\\{return this\\.([a-zA-Z]+)');
 	addDump('moveStrafeDump', 'this\\.([a-zA-Z]+)=\\([a-zA-Z]+\\.right');
 	addDump('moveForwardDump', 'this\\.([a-zA-Z]+)=\\([a-zA-Z]+\\.(up|down)');
 	addDump('keyPressedDump', 'function ([a-zA-Z]*)\\([a-zA-Z]*\\)\{return keyPressed\\([a-zA-Z]*\\)');
@@ -1418,88 +1419,6 @@ h.addVelocity(-Math.sin(this.yaw) * g * .5, .1, -Math.cos(this.yaw) * g * .5);
 						onGround: false
 					}));
 				}
-			}
-
-			let targetHudEnabled = false;
-			let targetHudX, targetHudY, targetHudScale;
-
-			new Module("TargetHUD", function(enabled) {
-			    targetHudEnabled = enabled;
-			    if (enabled) {
- 			       renderTickLoop["TargetHUD"] = drawTargetHUD;
-			    } else {
-			        delete renderTickLoop["TargetHUD"];
- 			   }
-			}, "Render", () => "Player Info");
-
-			targetHudX = modules["TargetHUD"].addoption("X", Number, 100);
-			targetHudY = modules["TargetHUD"].addoption("Y", Number, 100);
-			targetHudScale = modules["TargetHUD"].addoption("Scale", Number, 1);
-
-			function drawTargetHUD() {
-  			  if (!targetHudEnabled || !player || attackList.length === 0) return;
-  			  
-  			  const target = attackList[0];
-   			 if (!target || !(target instanceof EntityPlayer)) return;
-   			 
-   			 const ctx = getContext();
-   			 const canvas = getCanvas();
-    
-   			
-   			 const targetName = target.name;
-   			 const targetHealth = target.getHealth();
-   			 const targetMaxHealth = target.getMaxHealth();
-   			 const targetDistance = player.getDistanceToEntity(target).toFixed(1);
-    
-  		
-   			 const x = targetHudX[1];
-   			 const y = targetHudY[1];
-    			const scale = targetHudScale[1];
-    			const width = 150 * scale;
-   			 const height = 60 * scale;
-    
-   			
-   			 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-   			 ctx.fillRect(x, y, width, height);
-    
-    			
-   			 ctx.strokeStyle = '#0FB3A0';
-   			 ctx.lineWidth = 2;
-   			 ctx.strokeRect(x, y, width, height);
-    
-   			
-   			 ctx.fillStyle = '#FFFFFF';
-   			 ctx.font = `${14 * scale}px Arial`;
-  			  ctx.fillText(targetName, x + 10, y + 20);
-    
-   		
-   			 ctx.fillStyle = '#CCCCCC';
-   			 ctx.font = `${12 * scale}px Arial`;
-    			ctx.fillText(`${targetDistance} blocks`, x + 10, y + 40);
-   			 
-
-   			 const healthBarWidth = width - 20;
-   			 const healthBarHeight = 8 * scale;
-   			 const healthBarX = x + 10;
-   			 const healthBarY = y + 50;
-    
-   			 ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
-    			ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-    
-
-    			const healthPercent = targetHealth / targetMaxHealth;
-   			 ctx.fillStyle = healthPercent > 0.5 ? '#00FF00' : healthPercent > 0.2 ? '#FFFF00' : '#FF0000';
-   			 ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
-    			
-
-    			ctx.strokeStyle = '#FFFFFF';
-   			 ctx.lineWidth = 1;
-    			ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-    
-
-   			 ctx.fillStyle = '#FFFFFF';
-   			 ctx.font = `${10 * scale}px Arial`;
-   			 ctx.fillText(`${targetHealth}/${targetMaxHealth}`, x + 10, y + 70);
 			}
 
 			// Killaura!
@@ -2983,6 +2902,89 @@ const autofunnychat = new Module("autofunnychat", function(callback) {
         ClientSocket.socket.on("CPacketMessage", window.__autoFunnyKillMsgListener);
     }
 }, "Combat");
+
+			let targetHudEnabled = false;
+let targetHudX, targetHudY, targetHudScale;
+
+new Module("TargetHUD", function(enabled) {
+    targetHudEnabled = enabled;
+    if (enabled) {
+        renderTickLoop["TargetHUD"] = drawTargetHUD;
+    } else {
+        delete renderTickLoop["TargetHUD"];
+    }
+}, "Render", () => "Player Info");
+
+targetHudX = modules["TargetHUD"].addoption("X", Number, 100);
+targetHudY = modules["TargetHUD"].addoption("Y", Number, 100);
+targetHudScale = modules["TargetHUD"].addoption("Scale", Number, 1);
+
+function drawTargetHUD() {
+    if (!targetHudEnabled || !player || attackList.length === 0) return;
+    
+    const target = attackList[0];
+    if (!target || !(target instanceof EntityPlayer)) return;
+    
+    const ctx = getContext();
+    const canvas = getCanvas();
+    
+    // Hedef bilgilerini al
+    const targetName = target.name;
+    const targetHealth = target.getHealth();
+    const targetMaxHealth = target.getMaxHealth();
+    const targetDistance = player.getDistanceToEntity(target).toFixed(1);
+    
+    // HUD pozisyonu ve boyutu
+    const x = targetHudX[1];
+    const y = targetHudY[1];
+    const scale = targetHudScale[1];
+    const width = 150 * scale;
+    const height = 60 * scale;
+    
+    // Arkaplan
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(x, y, width, height);
+    
+    // Kenarlık
+    ctx.strokeStyle = '#0FB3A0';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, width, height);
+    
+    // Oyuncu ismi
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `${14 * scale}px Arial`;
+    ctx.fillText(targetName, x + 10, y + 20);
+    
+    // Mesafe
+    ctx.fillStyle = '#CCCCCC';
+    ctx.font = `${12 * scale}px Arial`;
+    ctx.fillText(`${targetDistance} blocks`, x + 10, y + 40);
+    
+    // Health bar arkaplan
+    const healthBarWidth = width - 20;
+    const healthBarHeight = 8 * scale;
+    const healthBarX = x + 10;
+    const healthBarY = y + 50;
+    
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+    ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+    
+    // Health bar doluluk
+    const healthPercent = targetHealth / targetMaxHealth;
+    ctx.fillStyle = healthPercent > 0.5 ? '#00FF00' : healthPercent > 0.2 ? '#FFFF00' : '#FF0000';
+    ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
+    
+    // Health bar kenarlık
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+    
+    // Health değeri
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `${10 * scale}px Arial`;
+    ctx.fillText(`${targetHealth}/${targetMaxHealth}`, x + 10, y + 70);
+}
+
 
 // Jesus
 const jesus = new Module("Jesus", function(callback) {

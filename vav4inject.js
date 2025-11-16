@@ -96,8 +96,6 @@ function modifyCode(text) {
 	addDump('damageReduceAmountDump', 'ItemArmor&&\\([a-zA-Z]*\\+\\=[a-zA-Z]*\.([a-zA-Z]*)');
 	addDump('boxGeometryDump', 'w=new Mesh\\(new ([a-zA-Z]*)\\(1');
 	addDump('syncItemDump', 'playerControllerMP\.([a-zA-Z]*)\\(\\),ClientSocket\.sendPacket');
-	addDump('playerHealthDump', 'this\\.([a-zA-Z]+)=this\\.getMaxHealth\\(\\)');
-	addDump('entityHealthDump', 'this\\.([a-zA-Z]+)=h\\.getMaxHealth\\(\\)');
 	addDump('getHealthDump', 'getHealth\\(\\)\\{return this\\.([a-zA-Z]+)');
 
 	// PRE

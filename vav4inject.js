@@ -3881,7 +3881,7 @@ function createModuleRow(name, mod, content) {
 					selectedCategory = null;
 
 					// Re-request pointer lock when closing GUI
-					if (game?.canvas) {
+					if (typeof game !== "undefined" && game && game.canvas && typeof game.canvas.requestPointerLock === "function") {
 						game.canvas.requestPointerLock();
 					}
 				}

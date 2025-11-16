@@ -107,7 +107,7 @@ function modifyCode(text) {
 			DOMContentLoaded_event.initEvent("DOMContentLoaded", true, true);
 			document.dispatchEvent(DOMContentLoaded_event);
 		}, 0);
-	`);
+	`, true);
 	addModification('y:this.getEntityBoundingBox().min.y,', 'y:sendY != false ? sendY : this.getEntityBoundingBox().min.y,', true);
 	addModification("const player=new ClientEntityPlayer", `
 // note: when using this desync,
@@ -225,7 +225,8 @@ let serverPos = player.pos.clone();
     }
 `);
 	// TEXT GUI
-	addModification('(this.drawSelectedItemStack(),this.drawHintBox())', `
+addModification('(this.drawSelectedItemStack(),this.drawHintBox())', `
+	(this.drawSelectedItemStack(),this.drawHintBox());
 	if (ctx$5 && enabledModules["TextGUI"]) {
 		const canvasW = ctx$5.canvas.width;
 		const canvasH = ctx$5.canvas.height;
@@ -249,14 +250,14 @@ let serverPos = player.pos.clone();
 		for (const module of filtered) {
 			offset++;
 			
-			const fontStyle = \`\${textguisize[1]}px \${textguifont[1]}\`;
+			const fontStyle = textguisize[1] + "px " + textguifont[1];
 			ctx$5.font = fontStyle;
 
 			// Build strings
 			const rainbowText = module.name;
 			const modeText = module.tag?.trim();
 
-			const fullText = \`\${rainbowText}\${modeText ? " " + modeText : ""}\`;
+			const fullText = rainbowText + (modeText ? " " + modeText : "");
 			const textWidth = ctx$5.measureText(fullText).width;
 			const x = canvasW - textWidth - posX;
 			const y = posY + (textguisize[1] + 3) * offset;
@@ -274,7 +275,7 @@ let serverPos = player.pos.clone();
 				x,
 				y,
 				fontStyle,
-				\`hsl(\${((colorOffset - 0.025 * offset) % 1) * 360},100%,50%)\`,
+			"hsl(" + (((colorOffset - 0.025 * offset) % 1) * 360) + ",100%,50%)",
 				"left",
 				"top",
 				1,

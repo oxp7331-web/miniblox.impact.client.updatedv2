@@ -84,9 +84,6 @@ function modifyCode(text) {
 	'use strict';
 
 	// DUMPS
-	addDump('playerHealthDump', 'this\\.([a-zA-Z]+)=this\\.getMaxHealth\\(\\)');
-	addDump('entityHealthDump', 'this\\.([a-zA-Z]+)=h\\.getMaxHealth\\(\\)');
-	addDump('getHealthDump', 'getHealth\\(\\)\\{return this\\.([a-zA-Z]+)');
 	addDump('moveStrafeDump', 'this\\.([a-zA-Z]+)=\\([a-zA-Z]+\\.right');
 	addDump('moveForwardDump', 'this\\.([a-zA-Z]+)=\\([a-zA-Z]+\\.(up|down)');
 	addDump('keyPressedDump', 'function ([a-zA-Z]*)\\([a-zA-Z]*\\)\{return keyPressed\\([a-zA-Z]*\\)');
@@ -99,6 +96,9 @@ function modifyCode(text) {
 	addDump('damageReduceAmountDump', 'ItemArmor&&\\([a-zA-Z]*\\+\\=[a-zA-Z]*\.([a-zA-Z]*)');
 	addDump('boxGeometryDump', 'w=new Mesh\\(new ([a-zA-Z]*)\\(1');
 	addDump('syncItemDump', 'playerControllerMP\.([a-zA-Z]*)\\(\\),ClientSocket\.sendPacket');
+	addDump('playerHealthDump', 'this\\.([a-zA-Z]+)=this\\.getMaxHealth\\(\\)');
+	addDump('entityHealthDump', 'this\\.([a-zA-Z]+)=h\\.getMaxHealth\\(\\)');
+	addDump('getHealthDump', 'getHealth\\(\\)\\{return this\\.([a-zA-Z]+)');
 
 	// PRE
 	addModification('document.addEventListener("DOMContentLoaded",startGame,!1);', `
@@ -318,6 +318,57 @@ let serverPos = player.pos.clone();
 		drawImage(ctx$5, logo, logoX, logoY, logoW, logoH);
 		ctx$5.shadowColor = "transparent";
 		ctx$5.shadowBlur = 0;
+
+		if (ctx$5 && enabledModules["TargetHUD"] && player && attackList.length > 0) {
+			const target = attackList[0];
+			if (target && target instanceof EntityPlayer) {
+				const targetName = target.name;
+				const targetHealth = target.getHealth();
+				const targetMaxHealth = target.getMaxHealth ? target.getMaxHealth() : targetHealth;
+				const targetDistance = Math.sqrt(player.getDistanceSqToEntity(target)).toFixed(1);
+
+				const x = targetHudX[1];
+				const y = targetHudY[1];
+				const scale = targetHudScale[1];
+				const width = 150 * scale;
+				const height = 60 * scale;
+
+				ctx$5.fillStyle = 'rgba(0, 0, 0, 0.7)';
+				ctx$5.fillRect(x, y, width, height);
+
+				ctx$5.strokeStyle = '#0FB3A0';
+				ctx$5.lineWidth = 2;
+				ctx$5.strokeRect(x, y, width, height);
+
+				ctx$5.fillStyle = '#FFFFFF';
+				ctx$5.font = `${14 * scale}px Arial`;
+				ctx$5.fillText(targetName, x + 10, y + 20);
+
+				ctx$5.fillStyle = '#CCCCCC';
+				ctx$5.font = `${12 * scale}px Arial`;
+				ctx$5.fillText(`${targetDistance} blocks`, x + 10, y + 40);
+
+				const healthBarWidth = width - 20;
+				const healthBarHeight = 8 * scale;
+				const healthBarX = x + 10;
+				const healthBarY = y + 50;
+
+				ctx$5.fillStyle = 'rgba(255, 0, 0, 0.3)';
+				ctx$5.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+				const healthPercent = targetMaxHealth > 0 ? targetHealth / targetMaxHealth : 0;
+				ctx$5.fillStyle = healthPercent > 0.5 ? '#00FF00' : healthPercent > 0.2 ? '#FFFF00' : '#FF0000';
+				ctx$5.fillRect(healthBarX, healthBarY, healthBarWidth * Math.max(0, Math.min(1, healthPercent)), healthBarHeight);
+
+				ctx$5.strokeStyle = '#FFFFFF';
+				ctx$5.lineWidth = 1;
+				ctx$5.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+				ctx$5.fillStyle = '#FFFFFF';
+				ctx$5.font = `${10 * scale}px Arial`;
+				ctx$5.fillText(`${Math.floor(targetHealth)}/${Math.floor(targetMaxHealth)}`, x + 10, y + 70);
+			}
+		}
 	}
 `);
 
@@ -1766,6 +1817,15 @@ speedauto = speed.addoption("AutoJump", Boolean, true);
 			textguisize = textgui.addoption("TextSize", Number, 15);
 			textguishadow = textgui.addoption("Shadow", Boolean, true);
 			textgui.toggle();
+
+			let targetHudEnabled;
+			let targetHudX, targetHudY, targetHudScale;
+			const targetHud = new Module("TargetHUD", function(enabled) {
+				targetHudEnabled = enabled;
+			}, "Render", () => "Player Info");
+			targetHudX = targetHud.addoption("X", Number, 100);
+			targetHudY = targetHud.addoption("Y", Number, 100);
+			targetHudScale = targetHud.addoption("Scale", Number, 1);
 			new Module("AutoRespawn", function() {});
 
 			// === Script Manager Module ===
@@ -2902,90 +2962,6 @@ const autofunnychat = new Module("autofunnychat", function(callback) {
         ClientSocket.socket.on("CPacketMessage", window.__autoFunnyKillMsgListener);
     }
 }, "Combat");
-
-			let targetHudEnabled = false;
-let targetHudX, targetHudY, targetHudScale;
-
-new Module("TargetHUD", function(enabled) {
-    targetHudEnabled = enabled;
-    if (enabled) {
-        renderTickLoop["TargetHUD"] = drawTargetHUD;
-    } else {
-        delete renderTickLoop["TargetHUD"];
-    }
-}, "Render", () => "Player Info");
-
-targetHudX = modules["TargetHUD"].addoption("X", Number, 100);
-targetHudY = modules["TargetHUD"].addoption("Y", Number, 100);
-targetHudScale = modules["TargetHUD"].addoption("Scale", Number, 1);
-
-function drawTargetHUD() {
-    if (!targetHudEnabled || !player || attackList.length === 0) return;
-    
-    const target = attackList[0];
-    if (!target || !(target instanceof EntityPlayer)) return;
-    
-    const ctx = getContext();
-    const canvas = getCanvas();
-    
-    // Hedef bilgilerini al
-    const targetName = target.name;
-    const targetHealth = target.getHealth();
-    const targetMaxHealth = target.getMaxHealth();
-    const targetDistance = player.getDistanceToEntity(target).toFixed(1);
-    
-    // HUD pozisyonu ve boyutu
-    const x = targetHudX[1];
-    const y = targetHudY[1];
-    const scale = targetHudScale[1];
-    const width = 150 * scale;
-    const height = 60 * scale;
-    
-    // Arkaplan
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(x, y, width, height);
-    
-    // Kenarlık
-    ctx.strokeStyle = '#0FB3A0';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, width, height);
-    
-    // Oyuncu ismi
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = `${14 * scale}px Arial`;
-    ctx.fillText(targetName, x + 10, y + 20);
-    
-    // Mesafe
-    ctx.fillStyle = '#CCCCCC';
-    ctx.font = `${12 * scale}px Arial`;
-    ctx.fillText(`${targetDistance} blocks`, x + 10, y + 40);
-    
-    // Health bar arkaplan
-    const healthBarWidth = width - 20;
-    const healthBarHeight = 8 * scale;
-    const healthBarX = x + 10;
-    const healthBarY = y + 50;
-    
-    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
-    ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-    
-    // Health bar doluluk
-    const healthPercent = targetHealth / targetMaxHealth;
-    ctx.fillStyle = healthPercent > 0.5 ? '#00FF00' : healthPercent > 0.2 ? '#FFFF00' : '#FF0000';
-    ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
-    
-    // Health bar kenarlık
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-    
-    // Health değeri
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = `${10 * scale}px Arial`;
-    ctx.fillText(`${targetHealth}/${targetMaxHealth}`, x + 10, y + 70);
-
-`);
-
 
 // Jesus
 const jesus = new Module("Jesus", function(callback) {

@@ -2983,7 +2983,8 @@ function drawTargetHUD() {
     ctx.fillStyle = '#FFFFFF';
     ctx.font = `${10 * scale}px Arial`;
     ctx.fillText(`${targetHealth}/${targetMaxHealth}`, x + 10, y + 70);
-}
+
+`);
 
 
 // Jesus

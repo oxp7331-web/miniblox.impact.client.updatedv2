@@ -96,7 +96,6 @@ function modifyCode(text) {
 	addDump('damageReduceAmountDump', 'ItemArmor&&\\([a-zA-Z]*\\+\\=[a-zA-Z]*\.([a-zA-Z]*)');
 	addDump('boxGeometryDump', 'w=new Mesh\\(new ([a-zA-Z]*)\\(1');
 	addDump('syncItemDump', 'playerControllerMP\.([a-zA-Z]*)\\(\\),ClientSocket\.sendPacket');
-	addDump('getHealthDump', 'getHealth\\(\\)\\{return this\\.([a-zA-Z]+)');
 
 	// PRE
 	addModification('document.addEventListener("DOMContentLoaded",startGame,!1);', `
@@ -105,7 +104,7 @@ function modifyCode(text) {
 			DOMContentLoaded_event.initEvent("DOMContentLoaded", true, true);
 			document.dispatchEvent(DOMContentLoaded_event);
 		}, 0);
-	`, true);
+	`);
 	addModification('y:this.getEntityBoundingBox().min.y,', 'y:sendY != false ? sendY : this.getEntityBoundingBox().min.y,', true);
 	addModification("const player=new ClientEntityPlayer", `
 // note: when using this desync,
@@ -223,8 +222,7 @@ let serverPos = player.pos.clone();
     }
 `);
 	// TEXT GUI
-addModification('(this.drawSelectedItemStack(),this.drawHintBox())', `
-	(this.drawSelectedItemStack(),this.drawHintBox());
+	addModification('(this.drawSelectedItemStack(),this.drawHintBox())', /*js*/`
 	if (ctx$5 && enabledModules["TextGUI"]) {
 		const canvasW = ctx$5.canvas.width;
 		const canvasH = ctx$5.canvas.height;
@@ -248,14 +246,14 @@ addModification('(this.drawSelectedItemStack(),this.drawHintBox())', `
 		for (const module of filtered) {
 			offset++;
 			
-			const fontStyle = textguisize[1] + "px " + textguifont[1];
+			const fontStyle = \`\${textguisize[1]}px \${textguifont[1]}\`;
 			ctx$5.font = fontStyle;
 
 			// Build strings
 			const rainbowText = module.name;
 			const modeText = module.tag?.trim();
 
-			const fullText = rainbowText + (modeText ? " " + modeText : "");
+			const fullText = \`\${rainbowText}\${modeText ? " " + modeText : ""}\`;
 			const textWidth = ctx$5.measureText(fullText).width;
 			const x = canvasW - textWidth - posX;
 			const y = posY + (textguisize[1] + 3) * offset;
@@ -273,7 +271,7 @@ addModification('(this.drawSelectedItemStack(),this.drawHintBox())', `
 				x,
 				y,
 				fontStyle,
-			"hsl(" + (((colorOffset - 0.025 * offset) % 1) * 360) + ",100%,50%)",
+				\`hsl(\${((colorOffset - 0.025 * offset) % 1) * 360},100%,50%)\`,
 				"left",
 				"top",
 				1,
@@ -317,57 +315,6 @@ addModification('(this.drawSelectedItemStack(),this.drawHintBox())', `
 		drawImage(ctx$5, logo, logoX, logoY, logoW, logoH);
 		ctx$5.shadowColor = "transparent";
 		ctx$5.shadowBlur = 0;
-
-		if (ctx$5 && enabledModules["TargetHUD"] && player && attackList.length > 0) {
-			const target = attackList[0];
-			if (target && target instanceof EntityPlayer) {
-				const targetName = target.name;
-				const targetHealth = target.getHealth();
-				const targetMaxHealth = target.getMaxHealth ? target.getMaxHealth() : targetHealth;
-				const targetDistance = Math.sqrt(player.getDistanceSqToEntity(target)).toFixed(1);
-
-				const x = targetHudX[1];
-				const y = targetHudY[1];
-				const scale = targetHudScale[1];
-				const width = 150 * scale;
-				const height = 60 * scale;
-
-				ctx$5.fillStyle = 'rgba(0, 0, 0, 0.7)';
-				ctx$5.fillRect(x, y, width, height);
-
-				ctx$5.strokeStyle = '#0FB3A0';
-				ctx$5.lineWidth = 2;
-				ctx$5.strokeRect(x, y, width, height);
-
-				ctx$5.fillStyle = '#FFFFFF';
-				ctx$5.font = (14 * scale) + "px Arial";
-				ctx$5.fillText(targetName, x + 10, y + 20);
-
-				ctx$5.fillStyle = '#CCCCCC';
-				ctx$5.font = (12 * scale) + "px Arial";
-				ctx$5.fillText(targetDistance + " blocks", x + 10, y + 40);
-
-				const healthBarWidth = width - 20;
-				const healthBarHeight = 8 * scale;
-				const healthBarX = x + 10;
-				const healthBarY = y + 50;
-
-				ctx$5.fillStyle = 'rgba(255, 0, 0, 0.3)';
-				ctx$5.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-
-				const healthPercent = targetMaxHealth > 0 ? targetHealth / targetMaxHealth : 0;
-				ctx$5.fillStyle = healthPercent > 0.5 ? '#00FF00' : healthPercent > 0.2 ? '#FFFF00' : '#FF0000';
-				ctx$5.fillRect(healthBarX, healthBarY, healthBarWidth * Math.max(0, Math.min(1, healthPercent)), healthBarHeight);
-
-				ctx$5.strokeStyle = '#FFFFFF';
-				ctx$5.lineWidth = 1;
-				ctx$5.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-
-				ctx$5.fillStyle = '#FFFFFF';
-				ctx$5.font = (10 * scale) + "px Arial";
-				ctx$5.fillText(Math.floor(targetHealth) + "/" + Math.floor(targetMaxHealth), x + 10, y + 70);
-			}
-		}
 	}
 `);
 
@@ -1816,15 +1763,6 @@ speedauto = speed.addoption("AutoJump", Boolean, true);
 			textguisize = textgui.addoption("TextSize", Number, 15);
 			textguishadow = textgui.addoption("Shadow", Boolean, true);
 			textgui.toggle();
-
-			let targetHudEnabled;
-			let targetHudX, targetHudY, targetHudScale;
-			const targetHud = new Module("TargetHUD", function(enabled) {
-				targetHudEnabled = enabled;
-			}, "Render", () => "Player Info");
-			targetHudX = targetHud.addoption("X", Number, 100);
-			targetHudY = targetHud.addoption("Y", Number, 100);
-			targetHudScale = targetHud.addoption("Scale", Number, 1);
 			new Module("AutoRespawn", function() {});
 
 			// === Script Manager Module ===
@@ -3879,7 +3817,7 @@ function createModuleRow(name, mod, content) {
 					selectedCategory = null;
 
 					// Re-request pointer lock when closing GUI
-					if (typeof game !== "undefined" && game && game.canvas && typeof game.canvas.requestPointerLock === "function") {
+					if (game?.canvas) {
 						game.canvas.requestPointerLock();
 					}
 				}
@@ -3923,6 +3861,6 @@ function createModuleRow(name, mod, content) {
 		});
 
 		// === Startup notification ===
-		setTimeout(() => { showNotif("Press insert to open Impact V6 ClickGUI!", "info", 4000); }, 500);
+		setTimeout(() => { showNotif("Press İNSERT to open Impact V6 ClickGUI!", "info", 4000); }, 500);
 	}
 })();

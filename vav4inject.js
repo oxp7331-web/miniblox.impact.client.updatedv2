@@ -225,7 +225,7 @@ let serverPos = player.pos.clone();
     }
 `);
 	// TEXT GUI
-	addModification('(this.drawSelectedItemStack(),this.drawHintBox())', /*js*/`
+	addModification('(this.drawSelectedItemStack(),this.drawHintBox())', `
 	if (ctx$5 && enabledModules["TextGUI"]) {
 		const canvasW = ctx$5.canvas.width;
 		const canvasH = ctx$5.canvas.height;
@@ -341,12 +341,12 @@ let serverPos = player.pos.clone();
 				ctx$5.strokeRect(x, y, width, height);
 
 				ctx$5.fillStyle = '#FFFFFF';
-				ctx$5.font = `${14 * scale}px Arial`;
+				ctx$5.font = (14 * scale) + "px Arial";
 				ctx$5.fillText(targetName, x + 10, y + 20);
 
 				ctx$5.fillStyle = '#CCCCCC';
-				ctx$5.font = `${12 * scale}px Arial`;
-				ctx$5.fillText(`${targetDistance} blocks`, x + 10, y + 40);
+				ctx$5.font = (12 * scale) + "px Arial";
+				ctx$5.fillText(targetDistance + " blocks", x + 10, y + 40);
 
 				const healthBarWidth = width - 20;
 				const healthBarHeight = 8 * scale;
@@ -365,8 +365,8 @@ let serverPos = player.pos.clone();
 				ctx$5.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
 
 				ctx$5.fillStyle = '#FFFFFF';
-				ctx$5.font = `${10 * scale}px Arial`;
-				ctx$5.fillText(`${Math.floor(targetHealth)}/${Math.floor(targetMaxHealth)}`, x + 10, y + 70);
+				ctx$5.font = (10 * scale) + "px Arial";
+				ctx$5.fillText(Math.floor(targetHealth) + "/" + Math.floor(targetMaxHealth), x + 10, y + 70);
 			}
 		}
 	}

@@ -96,6 +96,23 @@ function modifyCode(text) {
 	addDump('damageReduceAmountDump', 'ItemArmor&&\\([a-zA-Z]*\\+\\=[a-zA-Z]*\.([a-zA-Z]*)');
 	addDump('boxGeometryDump', 'w=new Mesh\\(new ([a-zA-Z]*)\\(1');
 	addDump('syncItemDump', 'playerControllerMP\.([a-zA-Z]*)\\(\\),ClientSocket\.sendPacket');
+addDump('healthDump', 'this\\.([a-zA-Z]+)=\\d+\\.\\d+,[a-zA-Z]+\\.([a-zA-Z]+)=\\d+\\.\\d+,[a-zA-Z]+\\.([a-zA-Z]+)=\\d+'); // Health değeri genellikle integer olarak tutulur
+
+addDump('healthDump2', 'getHealth\\(\\)\\{return this\\.([a-zA-Z]+)\\}');
+addDump('healthDump3', '\\.health\\s*=\\s*([a-zA-Z]+)');
+addDump('healthDump4', 'health\\s*:\\s*([a-zA-Z]+)');
+
+addDump('nameDump', 'getName\\(\\)\\{return this\\.([a-zA-Z]+)\\}');
+addDump('nameDump2', 'username\\s*=\\s*"([^"]+)"');
+addDump('nameDump3', 'displayName\\s*=\\s*"([^"]+)"');
+addDump('nameDump4', 'this\\.([a-zA-Z]+)\\s*=\\s*"([^"]+)"'); // Player name assignment
+addDump('nameDump5', 'name\\s*:\\s*"([^"]+)"');
+
+addDump('playerEntityDump', 'this\\.([a-zA-Z]+)=new ([a-zA-Z]*Player|Player[a-zA-Z]*)');
+addDump('playerObjectDump', 'this\\.player\\s*=\\s*this\\.([a-zA-Z]+)');
+
+addDump('entityHealthDump', 'entity\\.([a-zA-Z]+)\\s*===\\s*\\d+');
+addDump('entityNameDump', 'entity\\.([a-zA-Z]+)\\s*===\\s*"[^"]+"'); 
 
 	// PRE
 	addModification('document.addEventListener("DOMContentLoaded",startGame,!1);', `
@@ -315,6 +332,35 @@ let serverPos = player.pos.clone();
 		drawImage(ctx$5, logo, logoX, logoY, logoW, logoH);
 		ctx$5.shadowColor = "transparent";
 		ctx$5.shadowBlur = 0;
+
+	if (ctx$5 && enabledModules["TargetHUD"] && attackedEntity && attackTime > Date.now()) {
+		const canvasW = ctx$5.canvas.width;
+		const canvasH = ctx$5.canvas.height;
+		const w = 220;
+		const h = 58;
+		const x = (canvasW - w) / 2;
+		const y = canvasH - h - 90;
+		ctx$5.fillStyle = "rgba(0,0,0,0.45)";
+		ctx$5.fillRect(x, y, w, h);
+		const name = attackedEntity.name || "Unknown";
+		const fontStyle = Math.max(12, textguisize[1]) + "px " + textguifont[1];
+		drawText(ctx$5, name, x + 12, y + 16, fontStyle, "#ffffff", "left", "top", 1, textguishadow[1]);
+		const maxHp = 20;
+		const hp = Math.max(0, Math.min(maxHp, attackedEntity.getHealth?.() ?? attackedEntity.health ?? 0));
+		const ratio = Math.max(0, Math.min(1, hp / maxHp));
+		const barX = x + 12;
+		const barY = y + h - 22;
+		const barW = w - 24;
+		const barH = 10;
+		ctx$5.fillStyle = "rgba(255,255,255,0.15)";
+		ctx$5.fillRect(barX, barY, barW, barH);
+		const hue = Math.floor(120 * ratio);
+		ctx$5.fillStyle = "hsl(" + hue + ",80%,50%)";
+		ctx$5.fillRect(barX, barY, Math.floor(barW * ratio), barH);
+		ctx$5.strokeStyle = "rgba(255,255,255,0.25)";
+		ctx$5.lineWidth = 1;
+		ctx$5.strokeRect(barX, barY, barW, barH);
+	}
 	}
 `);
 
@@ -1477,6 +1523,8 @@ h.addVelocity(-Math.sin(this.yaw) * g * .5, .1, -Math.cos(this.yaw) * g * .5);
 							})
 						}));
 						player.attackDump(entity);
+						attackedEntity = entity;
+						attackTime = Date.now() + 1500;
 					}
 				}
 			}
@@ -1758,6 +1806,7 @@ speedauto = speed.addoption("AutoJump", Boolean, true);
 
 
 			new Module("ESP", function() {}, "Render",() => "Highlight");
+			new Module("TargetHUD", function() {}, "Render");
 			const textgui = new Module("TextGUI", function() {}, "Render");
 			textguifont = textgui.addoption("Font", String, "Poppins");
 			textguisize = textgui.addoption("TextSize", Number, 15);

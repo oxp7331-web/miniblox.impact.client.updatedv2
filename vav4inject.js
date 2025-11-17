@@ -96,23 +96,12 @@ function modifyCode(text) {
 	addDump('damageReduceAmountDump', 'ItemArmor&&\\([a-zA-Z]*\\+\\=[a-zA-Z]*\.([a-zA-Z]*)');
 	addDump('boxGeometryDump', 'w=new Mesh\\(new ([a-zA-Z]*)\\(1');
 	addDump('syncItemDump', 'playerControllerMP\.([a-zA-Z]*)\\(\\),ClientSocket\.sendPacket');
-addDump('healthDump', 'this\\.([a-zA-Z]+)=\\d+\\.\\d+,[a-zA-Z]+\\.([a-zA-Z]+)=\\d+\\.\\d+,[a-zA-Z]+\\.([a-zA-Z]+)=\\d+'); // Health değeri genellikle integer olarak tutulur
-
-addDump('healthDump2', 'getHealth\\(\\)\\{return this\\.([a-zA-Z]+)\\}');
-addDump('healthDump3', '\\.health\\s*=\\s*([a-zA-Z]+)');
-addDump('healthDump4', 'health\\s*:\\s*([a-zA-Z]+)');
-
-addDump('nameDump', 'getName\\(\\)\\{return this\\.([a-zA-Z]+)\\}');
-addDump('nameDump2', 'username\\s*=\\s*"([^"]+)"');
-addDump('nameDump3', 'displayName\\s*=\\s*"([^"]+)"');
-addDump('nameDump4', 'this\\.([a-zA-Z]+)\\s*=\\s*"([^"]+)"'); // Player name assignment
-addDump('nameDump5', 'name\\s*:\\s*"([^"]+)"');
-
-addDump('playerEntityDump', 'this\\.([a-zA-Z]+)=new ([a-zA-Z]*Player|Player[a-zA-Z]*)');
-addDump('playerObjectDump', 'this\\.player\\s*=\\s*this\\.([a-zA-Z]+)');
-
-addDump('entityHealthDump', 'entity\\.([a-zA-Z]+)\\s*===\\s*\\d+');
-addDump('entityNameDump', 'entity\\.([a-zA-Z]+)\\s*===\\s*"[^"]+"'); 
+	addDump('healthDump3', '\\.health\\s*=\\s*([a-zA-Z]+)');
+	addDump('nameDump2', 'username\\s*=\\s*"([^"]+)"');
+	addDump('nameDump3', 'displayName\\s*=\\s*"([^"]+)"');
+	addDump('nameDump4', 'this\\.([a-zA-Z]+)\\s*=\\s*"([^"]+)"');
+	addDump('nameDump5', 'name\\s*:\\s*"([^"]+)"');
+	addDump('playerEntityDump', 'this\\.([a-zA-Z]+)=new ([a-zA-Z]*Player|Player[a-zA-Z]*)');
 
 	// PRE
 	addModification('document.addEventListener("DOMContentLoaded",startGame,!1);', `

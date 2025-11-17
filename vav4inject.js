@@ -322,34 +322,77 @@ let serverPos = player.pos.clone();
 		ctx$5.shadowColor = "transparent";
 		ctx$5.shadowBlur = 0;
 
-	if (ctx$5 && enabledModules["TargetHUD"] && attackedEntity && attackTime > Date.now()) {
-		const canvasW = ctx$5.canvas.width;
-		const canvasH = ctx$5.canvas.height;
-		const w = 220;
-		const h = 58;
-		const x = (canvasW - w) / 2;
-		const y = canvasH - h - 90;
-		ctx$5.fillStyle = "rgba(0,0,0,0.45)";
-		ctx$5.fillRect(x, y, w, h);
-		const name = attackedEntity.name || "Unknown";
-		const fontStyle = Math.max(12, textguisize[1]) + "px " + textguifont[1];
-		drawText(ctx$5, name, x + 12, y + 16, fontStyle, "#ffffff", "left", "top", 1, textguishadow[1]);
-		const maxHp = 20;
-		const hp = Math.max(0, Math.min(maxHp, attackedEntity.getHealth?.() ?? attackedEntity.health ?? 0));
-		const ratio = Math.max(0, Math.min(1, hp / maxHp));
-		const barX = x + 12;
-		const barY = y + h - 22;
-		const barW = w - 24;
-		const barH = 10;
-		ctx$5.fillStyle = "rgba(255,255,255,0.15)";
-		ctx$5.fillRect(barX, barY, barW, barH);
-		const hue = Math.floor(120 * ratio);
-		ctx$5.fillStyle = "hsl(" + hue + ",80%,50%)";
-		ctx$5.fillRect(barX, barY, Math.floor(barW * ratio), barH);
-		ctx$5.strokeStyle = "rgba(255,255,255,0.25)";
-		ctx$5.lineWidth = 1;
-		ctx$5.strokeRect(barX, barY, barW, barH);
-	}
+if (ctx$5 && enabledModules["TargetHUD"] && attackedEntity && attackTime > Date.now()) {
+	const canvasW = ctx$5.canvas.width;
+	const canvasH = ctx$5.canvas.height;
+
+	const w = 240;
+	const h = 70;
+	const x = (canvasW - w) / 2;
+	const y = canvasH - h - 90;
+
+	// Arkaplan (Glassmorphism tarzı)
+	ctx$5.fillStyle = "rgba(20, 20, 20, 0.45)";
+	ctx$5.shadowColor = "rgba(0,0,0,0.45)";
+	ctx$5.shadowBlur = 12;
+	ctx$5.fillRect(x, y, w, h);
+	ctx$5.shadowBlur = 0;
+
+	// Border (soft modern outline)
+	ctx$5.strokeStyle = "rgba(255,255,255,0.08)";
+	ctx$5.lineWidth = 1.3;
+	ctx$5.strokeRect(x, y, w, h);
+
+	const name = attackedEntity.name || "Unknown";
+	const fontStyle = `bold ${Math.max(12, textguisize[1])}px ${textguifont[1]}`;
+
+	// İsim
+	drawText(
+		ctx$5,
+		name,
+		x + 16,
+		y + 18,
+		fontStyle,
+		"white",
+		"left",
+		"top",
+		1,
+		true
+	);
+
+	// HP hesaplama
+	const maxHp = 20;
+	const hp = Math.max(0, Math.min(maxHp, attackedEntity.getHealth?.() ?? attackedEntity.health ?? 0));
+	const ratio = hp / maxHp;
+
+	// HP yazısı
+	ctx$5.font = "12px Arial";
+	ctx$5.fillStyle = "rgba(255,255,255,0.8)";
+	ctx$5.fillText(`${hp.toFixed(1)} / ${maxHp}`, x + w - 70, y + 20);
+
+	// HP bar
+	const barX = x + 16;
+	const barY = y + h - 24;
+	const barW = w - 32;
+	const barH = 12;
+
+	// Boş bar
+	ctx$5.fillStyle = "rgba(255,255,255,0.12)";
+	ctx$5.fillRect(barX, barY, barW, barH);
+
+	// Dolum rengi (gradient)
+	const grad = ctx$5.createLinearGradient(barX, barY, barX + barW, barY);
+	grad.addColorStop(0, "hsl(" + Math.floor(120 * ratio) + ",85%,55%)");
+	grad.addColorStop(1, "hsl(" + Math.floor(120 * ratio) + ",85%,45%)");
+
+	ctx$5.fillStyle = grad;
+	ctx$5.fillRect(barX, barY, Math.floor(barW * ratio), barH);
+
+	// Bar çerçevesi
+	ctx$5.strokeStyle = "rgba(255,255,255,0.20)";
+	ctx$5.lineWidth = 1;
+	ctx$5.strokeRect(barX, barY, barW, barH);
+    }
 	}
 `);
 

@@ -349,7 +349,7 @@ let serverPos = player.pos.clone();
 		ctx$5.shadowColor = "transparent";
 		ctx$5.shadowBlur = 0;
 
-	if (ctx$5 && enabledModules["TargetHUD"] && attackedEntity && attackTime > Date.now()) {
+	if (ctx$5 && enabledModules["TargetHUD"] && (attackedEntity || (attackList && attackList.length > 0))) {
 		const canvasW = ctx$5.canvas.width;
 		const canvasH = ctx$5.canvas.height;
 		const w = 240;
@@ -362,10 +362,11 @@ let serverPos = player.pos.clone();
 		ctx$5.fillStyle = "rgba(0,0,0,0.45)";
 		roundRect(ctx$5, x, y, w, h, 14);
 		ctx$5.fill();
-		const name = attackedEntity.name || "Unknown";
+		const target = attackedEntity || attackList[0];
+		const name = target?.name || "Unknown";
 		const fontStyle = Math.max(12, textguisize[1]) + "px " + textguifont[1];
 		let faceImg = null;
-		try { const head = attackedEntity.mesh?.meshes?.head; const map = head?.material?.map; faceImg = map?.image || null; } catch {}
+		try { const head = target?.mesh?.meshes?.head; const map = head?.material?.map; faceImg = map?.image || null; } catch {}
 		const faceSize = 40;
 		const faceX = x + 12;
 		const faceY = y + (h - faceSize) / 2;
@@ -374,7 +375,7 @@ let serverPos = player.pos.clone();
 		drawText(ctx$5, "Losing:", x + 64, y + 16, fontStyle, "#cfd3d6", "left", "top", 1, textguishadow[1]);
 		drawText(ctx$5, name, x + 124, y + 16, fontStyle, "#00c2ff", "left", "top", 1, textguishadow[1]);
 		const maxHp = 20;
-		const hp = Math.max(0, Math.min(maxHp, attackedEntity.getHealth?.() ?? attackedEntity.health ?? 0));
+		const hp = Math.max(0, Math.min(maxHp, target?.getHealth?.() ?? target?.health ?? 0));
 		const ratio = Math.max(0, Math.min(1, hp / maxHp));
 		const barX = x + 64;
 		const barY = y + h - 24;
@@ -1651,7 +1652,11 @@ h.addVelocity(-Math.sin(this.yaw) * g * .5, .1, -Math.cos(this.yaw) * g * .5);
 
 						for(const entity of attackList) killauraAttack(entity, attackList[0] == entity);
 
-						if (attackList.length > 0) block();
+						if (attackList.length > 0) {
+							attackedEntity = attackList[0];
+							attackTime = Date.now() + 1500;
+							block();
+						}
 						else {
 							unblock();
 							sendYaw = false;

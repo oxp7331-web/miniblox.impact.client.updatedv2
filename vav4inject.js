@@ -96,12 +96,23 @@ function modifyCode(text) {
 	addDump('damageReduceAmountDump', 'ItemArmor&&\\([a-zA-Z]*\\+\\=[a-zA-Z]*\.([a-zA-Z]*)');
 	addDump('boxGeometryDump', 'w=new Mesh\\(new ([a-zA-Z]*)\\(1');
 	addDump('syncItemDump', 'playerControllerMP\.([a-zA-Z]*)\\(\\),ClientSocket\.sendPacket');
-	addDump('healthDump3', '\\.health\\s*=\\s*([a-zA-Z]+)');
-	addDump('nameDump2', 'username\\s*=\\s*"([^"]+)"');
-	addDump('nameDump3', 'displayName\\s*=\\s*"([^"]+)"');
-	addDump('nameDump4', 'this\\.([a-zA-Z]+)\\s*=\\s*"([^"]+)"');
-	addDump('nameDump5', 'name\\s*:\\s*"([^"]+)"');
-	addDump('playerEntityDump', 'this\\.([a-zA-Z]+)=new ([a-zA-Z]*Player|Player[a-zA-Z]*)');
+addDump('healthDump', 'this\\.([a-zA-Z]+)=\\d+\\.\\d+,[a-zA-Z]+\\.([a-zA-Z]+)=\\d+\\.\\d+,[a-zA-Z]+\\.([a-zA-Z]+)=\\d+'); // Health değeri genellikle integer olarak tutulur
+
+addDump('healthDump2', 'getHealth\\(\\)\\{return this\\.([a-zA-Z]+)\\}');
+addDump('healthDump3', '\\.health\\s*=\\s*([a-zA-Z]+)');
+addDump('healthDump4', 'health\\s*:\\s*([a-zA-Z]+)');
+
+addDump('nameDump', 'getName\\(\\)\\{return this\\.([a-zA-Z]+)\\}');
+addDump('nameDump2', 'username\\s*=\\s*"([^"]+)"');
+addDump('nameDump3', 'displayName\\s*=\\s*"([^"]+)"');
+addDump('nameDump4', 'this\\.([a-zA-Z]+)\\s*=\\s*"([^"]+)"'); // Player name assignment
+addDump('nameDump5', 'name\\s*:\\s*"([^"]+)"');
+
+addDump('playerEntityDump', 'this\\.([a-zA-Z]+)=new ([a-zA-Z]*Player|Player[a-zA-Z]*)');
+addDump('playerObjectDump', 'this\\.player\\s*=\\s*this\\.([a-zA-Z]+)');
+
+addDump('entityHealthDump', 'entity\\.([a-zA-Z]+)\\s*===\\s*\\d+');
+addDump('entityNameDump', 'entity\\.([a-zA-Z]+)\\s*===\\s*"[^"]+"'); 
 
 	// PRE
 	addModification('document.addEventListener("DOMContentLoaded",startGame,!1);', `
@@ -226,6 +237,22 @@ let serverPos = player.pos.clone();
         ctx.drawImage(img, posX, posY, sizeX, sizeY);
         if (color) ctx.globalCompositeOperation = "source-over";
     }
+    function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+    }
+    function drawRoundedImage(ctx, img, x, y, w, h, r) {
+        ctx.save();
+        roundRect(ctx, x, y, w, h, r);
+        ctx.clip();
+        ctx.drawImage(img, x, y, w, h);
+        ctx.restore();
+    }
 `);
 	// TEXT GUI
 	addModification('(this.drawSelectedItemStack(),this.drawHintBox())', /*js*/`
@@ -322,77 +349,45 @@ let serverPos = player.pos.clone();
 		ctx$5.shadowColor = "transparent";
 		ctx$5.shadowBlur = 0;
 
-if (ctx$5 && enabledModules["TargetHUD"] && attackedEntity && attackTime > Date.now()) {
-	const canvasW = ctx$5.canvas.width;
-	const canvasH = ctx$5.canvas.height;
-
-	const w = 240;
-	const h = 70;
-	const x = (canvasW - w) / 2;
-	const y = canvasH - h - 90;
-
-	// Arkaplan (Glassmorphism tarzı)
-	ctx$5.fillStyle = "rgba(20, 20, 20, 0.45)";
-	ctx$5.shadowColor = "rgba(0,0,0,0.45)";
-	ctx$5.shadowBlur = 12;
-	ctx$5.fillRect(x, y, w, h);
-	ctx$5.shadowBlur = 0;
-
-	// Border (soft modern outline)
-	ctx$5.strokeStyle = "rgba(255,255,255,0.08)";
-	ctx$5.lineWidth = 1.3;
-	ctx$5.strokeRect(x, y, w, h);
-
-	const name = attackedEntity.name || "Unknown";
-	const fontStyle = `bold ${Math.max(12, textguisize[1])}px ${textguifont[1]}`;
-
-	// İsim
-	drawText(
-		ctx$5,
-		name,
-		x + 16,
-		y + 18,
-		fontStyle,
-		"white",
-		"left",
-		"top",
-		1,
-		true
-	);
-
-	// HP hesaplama
-	const maxHp = 20;
-	const hp = Math.max(0, Math.min(maxHp, attackedEntity.getHealth?.() ?? attackedEntity.health ?? 0));
-	const ratio = hp / maxHp;
-
-	// HP yazısı
-	ctx$5.font = "12px Arial";
-	ctx$5.fillStyle = "rgba(255,255,255,0.8)";
-	ctx$5.fillText(`${hp.toFixed(1)} / ${maxHp}`, x + w - 70, y + 20);
-
-	// HP bar
-	const barX = x + 16;
-	const barY = y + h - 24;
-	const barW = w - 32;
-	const barH = 12;
-
-	// Boş bar
-	ctx$5.fillStyle = "rgba(255,255,255,0.12)";
-	ctx$5.fillRect(barX, barY, barW, barH);
-
-	// Dolum rengi (gradient)
-	const grad = ctx$5.createLinearGradient(barX, barY, barX + barW, barY);
-	grad.addColorStop(0, "hsl(" + Math.floor(120 * ratio) + ",85%,55%)");
-	grad.addColorStop(1, "hsl(" + Math.floor(120 * ratio) + ",85%,45%)");
-
-	ctx$5.fillStyle = grad;
-	ctx$5.fillRect(barX, barY, Math.floor(barW * ratio), barH);
-
-	// Bar çerçevesi
-	ctx$5.strokeStyle = "rgba(255,255,255,0.20)";
-	ctx$5.lineWidth = 1;
-	ctx$5.strokeRect(barX, barY, barW, barH);
-    }
+	if (ctx$5 && enabledModules["TargetHUD"] && attackedEntity && attackTime > Date.now()) {
+		const canvasW = ctx$5.canvas.width;
+		const canvasH = ctx$5.canvas.height;
+		const w = 240;
+		const h = 68;
+		const cx = Math.max(0, Math.min(1, (targethudX?.[1] ?? 0.5)));
+		const cy = Math.max(0, Math.min(1, (targethudY?.[1] ?? 0.85)));
+		const x = Math.floor(canvasW * cx - w / 2);
+		const y = Math.floor(canvasH * cy - h / 2);
+		ctx$5.globalAlpha = 1;
+		ctx$5.fillStyle = "rgba(0,0,0,0.45)";
+		roundRect(ctx$5, x, y, w, h, 14);
+		ctx$5.fill();
+		const name = attackedEntity.name || "Unknown";
+		const fontStyle = Math.max(12, textguisize[1]) + "px " + textguifont[1];
+		let faceImg = null;
+		try { const head = attackedEntity.mesh?.meshes?.head; const map = head?.material?.map; faceImg = map?.image || null; } catch {}
+		const faceSize = 40;
+		const faceX = x + 12;
+		const faceY = y + (h - faceSize) / 2;
+		if (faceImg) drawRoundedImage(ctx$5, faceImg, faceX, faceY, faceSize, faceSize, 6);
+		else drawRoundedImage(ctx$5, textureManager.vapeTexture.image, faceX, faceY, faceSize, faceSize, 6);
+		drawText(ctx$5, "Losing:", x + 64, y + 16, fontStyle, "#cfd3d6", "left", "top", 1, textguishadow[1]);
+		drawText(ctx$5, name, x + 124, y + 16, fontStyle, "#00c2ff", "left", "top", 1, textguishadow[1]);
+		const maxHp = 20;
+		const hp = Math.max(0, Math.min(maxHp, attackedEntity.getHealth?.() ?? attackedEntity.health ?? 0));
+		const ratio = Math.max(0, Math.min(1, hp / maxHp));
+		const barX = x + 64;
+		const barY = y + h - 24;
+		const barW = w - 76;
+		const barH = 10;
+		ctx$5.fillStyle = "rgba(255,255,255,0.15)";
+		roundRect(ctx$5, barX, barY, barW, barH, 6);
+		ctx$5.fill();
+		ctx$5.fillStyle = "rgba(255,255,255,0.70)";
+		roundRect(ctx$5, barX, barY, Math.floor(barW * ratio), barH, 6);
+		ctx$5.fill();
+		drawText(ctx$5, hp.toFixed(1), x + w - 22, barY - 2, fontStyle, "#ffffff", "right", "top", 1, false);
+	}
 	}
 `);
 
@@ -1838,7 +1833,10 @@ speedauto = speed.addoption("AutoJump", Boolean, true);
 
 
 			new Module("ESP", function() {}, "Render",() => "Highlight");
-			new Module("TargetHUD", function() {}, "Render");
+			const targethud = new Module("TargetHUD", function() {}, "Render");
+			let targethudX, targethudY;
+			targethudX = targethud.addoption("X", Number, 0.5);
+			targethudY = targethud.addoption("Y", Number, 0.85);
 			const textgui = new Module("TextGUI", function() {}, "Render");
 			textguifont = textgui.addoption("Font", String, "Poppins");
 			textguisize = textgui.addoption("TextSize", Number, 15);

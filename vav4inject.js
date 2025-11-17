@@ -237,22 +237,6 @@ let serverPos = player.pos.clone();
         ctx.drawImage(img, posX, posY, sizeX, sizeY);
         if (color) ctx.globalCompositeOperation = "source-over";
     }
-    function roundRect(ctx, x, y, w, h, r) {
-        ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.arcTo(x + w, y, x + w, y + h, r);
-        ctx.arcTo(x + w, y + h, x, y + h, r);
-        ctx.arcTo(x, y + h, x, y, r);
-        ctx.arcTo(x, y, x + w, y, r);
-        ctx.closePath();
-    }
-    function drawRoundedImage(ctx, img, x, y, w, h, r) {
-        ctx.save();
-        roundRect(ctx, x, y, w, h, r);
-        ctx.clip();
-        ctx.drawImage(img, x, y, w, h);
-        ctx.restore();
-    }
 `);
 	// TEXT GUI
 	addModification('(this.drawSelectedItemStack(),this.drawHintBox())', /*js*/`
@@ -349,45 +333,62 @@ let serverPos = player.pos.clone();
 		ctx$5.shadowColor = "transparent";
 		ctx$5.shadowBlur = 0;
 
-	if (ctx$5 && enabledModules["TargetHUD"] && (attackedEntity || (attackList && attackList.length > 0))) {
+	if (ctx$5 && enabledModules["TargetHUD"] && attackedEntity && attackTime > Date.now()) {
 		const canvasW = ctx$5.canvas.width;
 		const canvasH = ctx$5.canvas.height;
 		const w = 240;
-		const h = 68;
-		const cx = Math.max(0, Math.min(1, (targethudX?.[1] ?? 0.5)));
-		const cy = Math.max(0, Math.min(1, (targethudY?.[1] ?? 0.85)));
-		const x = Math.floor(canvasW * cx - w / 2);
-		const y = Math.floor(canvasH * cy - h / 2);
-		ctx$5.globalAlpha = 1;
+		const h = 64;
+		const x = (canvasW - w) / 2;
+		const y = canvasH - h - 90;
 		ctx$5.fillStyle = "rgba(0,0,0,0.45)";
-		roundRect(ctx$5, x, y, w, h, 14);
-		ctx$5.fill();
-		const target = attackedEntity || attackList[0];
-		const name = target?.name || "Unknown";
+		ctx$5.fillRect(x, y, w, h);
+
+		const headSize = 44;
+		const headX = x + 10;
+		const headY = y + (h - headSize) / 2;
+		textureManager.headCache = textureManager.headCache || {};
+		textureManager.headCacheLoading = textureManager.headCacheLoading || {};
+		let headImg = textureManager.headCache[attackedEntity.name];
+		if (!headImg && !textureManager.headCacheLoading[attackedEntity.name]) {
+			textureManager.headCacheLoading[attackedEntity.name] = true;
+			const img = new Image();
+			img.crossOrigin = "anonymous";
+			const qName = encodeURIComponent(attackedEntity.name || "Unknown");
+			img.src = "https://minotar.net/avatar/" + qName + "/64.png";
+			img.onload = function() {
+				textureManager.headCache[attackedEntity.name] = img;
+				delete textureManager.headCacheLoading[attackedEntity.name];
+			};
+			img.onerror = function() {
+				delete textureManager.headCacheLoading[attackedEntity.name];
+			};
+		}
+		if (headImg) {
+			drawImage(ctx$5, headImg, headX, headY, headSize, headSize);
+		} else {
+			ctx$5.fillStyle = "rgba(255,255,255,0.12)";
+			ctx$5.fillRect(headX, headY, headSize, headSize);
+		}
+
+		const name = attackedEntity.name || "Unknown";
 		const fontStyle = Math.max(12, textguisize[1]) + "px " + textguifont[1];
-		let faceImg = null;
-		try { const head = target?.mesh?.meshes?.head; const map = head?.material?.map; faceImg = map?.image || null; } catch {}
-		const faceSize = 40;
-		const faceX = x + 12;
-		const faceY = y + (h - faceSize) / 2;
-		if (faceImg) drawRoundedImage(ctx$5, faceImg, faceX, faceY, faceSize, faceSize, 6);
-		else drawRoundedImage(ctx$5, textureManager.vapeTexture.image, faceX, faceY, faceSize, faceSize, 6);
-		drawText(ctx$5, "Losing:", x + 64, y + 16, fontStyle, "#cfd3d6", "left", "top", 1, textguishadow[1]);
-		drawText(ctx$5, name, x + 124, y + 16, fontStyle, "#00c2ff", "left", "top", 1, textguishadow[1]);
+		const textX = headX + headSize + 12;
+		drawText(ctx$5, name, textX, y + 14, fontStyle, "#ffffff", "left", "top", 1, textguishadow[1]);
 		const maxHp = 20;
-		const hp = Math.max(0, Math.min(maxHp, target?.getHealth?.() ?? target?.health ?? 0));
+		const hp = Math.max(0, Math.min(maxHp, attackedEntity.getHealth?.() ?? attackedEntity.health ?? 0));
 		const ratio = Math.max(0, Math.min(1, hp / maxHp));
-		const barX = x + 64;
-		const barY = y + h - 24;
-		const barW = w - 76;
+		const barX = textX;
+		const barY = y + h - 22;
+		const barW = x + w - barX - 12;
 		const barH = 10;
 		ctx$5.fillStyle = "rgba(255,255,255,0.15)";
-		roundRect(ctx$5, barX, barY, barW, barH, 6);
-		ctx$5.fill();
-		ctx$5.fillStyle = "rgba(255,255,255,0.70)";
-		roundRect(ctx$5, barX, barY, Math.floor(barW * ratio), barH, 6);
-		ctx$5.fill();
-		drawText(ctx$5, hp.toFixed(1), x + w - 22, barY - 2, fontStyle, "#ffffff", "right", "top", 1, false);
+		ctx$5.fillRect(barX, barY, barW, barH);
+		const hue = Math.floor(120 * ratio);
+		ctx$5.fillStyle = "hsl(" + hue + ",80%,50%)";
+		ctx$5.fillRect(barX, barY, Math.floor(barW * ratio), barH);
+		ctx$5.strokeStyle = "rgba(255,255,255,0.25)";
+		ctx$5.lineWidth = 1;
+		ctx$5.strokeRect(barX, barY, barW, barH);
 	}
 	}
 `);
@@ -1652,11 +1653,7 @@ h.addVelocity(-Math.sin(this.yaw) * g * .5, .1, -Math.cos(this.yaw) * g * .5);
 
 						for(const entity of attackList) killauraAttack(entity, attackList[0] == entity);
 
-						if (attackList.length > 0) {
-							attackedEntity = attackList[0];
-							attackTime = Date.now() + 1500;
-							block();
-						}
+						if (attackList.length > 0) block();
 						else {
 							unblock();
 							sendYaw = false;
@@ -1838,10 +1835,7 @@ speedauto = speed.addoption("AutoJump", Boolean, true);
 
 
 			new Module("ESP", function() {}, "Render",() => "Highlight");
-			const targethud = new Module("TargetHUD", function() {}, "Render");
-			let targethudX, targethudY;
-			targethudX = targethud.addoption("X", Number, 0.5);
-			targethudY = targethud.addoption("Y", Number, 0.85);
+			new Module("TargetHUD", function() {}, "Render");
 			const textgui = new Module("TextGUI", function() {}, "Render");
 			textguifont = textgui.addoption("Font", String, "Poppins");
 			textguisize = textgui.addoption("TextSize", Number, 15);

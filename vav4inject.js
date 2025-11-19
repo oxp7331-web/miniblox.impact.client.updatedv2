@@ -341,17 +341,24 @@ let serverPos = player.pos.clone();
 		const x = (canvasW - w) / 2;
 		const y = canvasH - h - 120;
 
-		// Draw background
+		// Draw background with gradient
 		ctx$5.save();
 		if (ctx$5.roundRect) {
 			ctx$5.beginPath();
 			ctx$5.roundRect(x, y, w, h, 12);
-			ctx$5.fillStyle = "rgba(15, 15, 15, 0.7)";
-			ctx$5.shadowColor = "rgba(0,0,0,0.5)";
-			ctx$5.shadowBlur = 15;
+			const grd = ctx$5.createLinearGradient(x, y, x, y + h);
+			grd.addColorStop(0, "rgba(20, 20, 25, 0.85)");
+			grd.addColorStop(1, "rgba(10, 10, 15, 0.95)");
+			ctx$5.fillStyle = grd;
+			ctx$5.shadowColor = "rgba(0,0,0,0.6)";
+			ctx$5.shadowBlur = 20;
 			ctx$5.fill();
+			// Border
+			ctx$5.lineWidth = 1;
+			ctx$5.strokeStyle = "rgba(255,255,255,0.1)";
+			ctx$5.stroke();
 		} else {
-			ctx$5.fillStyle = "rgba(15, 15, 15, 0.7)";
+			ctx$5.fillStyle = "rgba(15, 15, 15, 0.8)";
 			ctx$5.fillRect(x, y, w, h);
 		}
 		ctx$5.restore();
@@ -360,8 +367,13 @@ let serverPos = player.pos.clone();
 		const headX = x + 12;
 		const headY = y + (h - headSize) / 2;
 
-		// Try to get skin from entity
+		// --- Skin Finder Logic ---
 		let skinImage = null;
+		
+		// Helper to check if a value is a skin data URI
+		const isSkinData = (val) => typeof val === 'string' && val.startsWith('data:image/png;base64');
+
+		// 1. Check Three.js mesh texture (Standard)
 		try {
 			if (attackedEntity.mesh && attackedEntity.mesh.material) {
 				const mat = Array.isArray(attackedEntity.mesh.material) ? attackedEntity.mesh.material[0] : attackedEntity.mesh.material;
@@ -369,21 +381,69 @@ let serverPos = player.pos.clone();
 					skinImage = mat.map.image;
 				}
 			}
-			if (!skinImage && attackedEntity.skin && attackedEntity.skin.image) {
-				skinImage = attackedEntity.skin.image;
-			}
-			// Fallback to profile skin if available
-			if (!skinImage && attackedEntity.profile && attackedEntity.profile.skin) {
-				if (attackedEntity.profile.skin.image) skinImage = attackedEntity.profile.skin.image;
-			}
-		} catch (e) {}
+		} catch(e) {}
+
+		// 2. Dynamic Search for Base64 Data (User suggested)
+		if (!skinImage) {
+			try {
+				// Use cached property if available
+				if (attackedEntity._cachedSkinProp) {
+					const keys = attackedEntity._cachedSkinProp.split('.');
+					let val = attackedEntity;
+					for (const k of keys) val = val?.[k];
+					
+					if (isSkinData(val)) {
+						if (!attackedEntity._cachedSkinImage) {
+							const img = new Image();
+							img.src = val;
+							attackedEntity._cachedSkinImage = img;
+						}
+						skinImage = attackedEntity._cachedSkinImage;
+					}
+				} 
+				// Scan properties if not cached
+				else {
+					const scanObject = (obj, path = "") => {
+						if (!obj || typeof obj !== 'object') return null;
+						// Limit depth to avoid performance hit
+						if (path.split('.').length > 2) return null;
+
+						for (const key in obj) {
+							try {
+								const val = obj[key];
+								const currentPath = path ? `${ path }.${ key }` : key;
+								
+								if (isSkinData(val)) {
+									return currentPath;
+								}
+								// Recursive scan for objects (shallow)
+								if (val && typeof val === 'object' && !Array.isArray(val)) {
+									// Skip huge objects or circular refs if possible
+									if (key === 'mesh' || key === 'game' || key === 'world') continue; 
+									const found = scanObject(val, currentPath);
+									if (found) return found;
+								}
+							} catch(e) {}
+						}
+						return null;
+					};
+
+					const foundProp = scanObject(attackedEntity);
+					if (foundProp) {
+						attackedEntity._cachedSkinProp = foundProp;
+						// game.chat.addChat({text: "Found skin at: " + foundProp, color: "lime"}); // Debug
+					}
+				}
+			} catch(e) {}
+		}
+		// -------------------------
 
 		if (skinImage) {
 			try {
 				ctx$5.save();
 				// Clip rounded rect for head
 				ctx$5.beginPath();
-				if (ctx$5.roundRect) ctx$5.roundRect(headX, headY, headSize, headSize, 6);
+				if (ctx$5.roundRect) ctx$5.roundRect(headX, headY, headSize, headSize, 8);
 				else ctx$5.rect(headX, headY, headSize, headSize);
 				ctx$5.clip();
 
@@ -394,41 +454,51 @@ let serverPos = player.pos.clone();
 				ctx$5.drawImage(skinImage, 40, 8, 8, 8, headX, headY, headSize, headSize);
 				ctx$5.restore();
 			} catch (e) {
-				ctx$5.fillStyle = "#333";
+				// Fallback if drawing fails
+				ctx$5.fillStyle = "#222";
 				ctx$5.fillRect(headX, headY, headSize, headSize);
 			}
 		} else {
-			ctx$5.fillStyle = "#333";
-			ctx$5.fillRect(headX, headY, headSize, headSize);
-			// Draw ?
-			ctx$5.fillStyle = "#fff";
-			ctx$5.font = "20px Arial";
+			// Placeholder
+			ctx$5.fillStyle = "#222";
+			if (ctx$5.roundRect) {
+				ctx$5.beginPath();
+				ctx$5.roundRect(headX, headY, headSize, headSize, 8);
+				ctx$5.fill();
+			} else {
+				ctx$5.fillRect(headX, headY, headSize, headSize);
+			}
+			ctx$5.fillStyle = "#555";
+			ctx$5.font = "bold 24px Arial";
 			ctx$5.textAlign = "center";
 			ctx$5.textBaseline = "middle";
 			ctx$5.fillText("?", headX + headSize/2, headY + headSize/2);
 		}
 
 		const name = attackedEntity.name || "Unknown";
-		const fontStyle = "600 16px " + (textguifont[1] || "Arial");
-		const textX = headX + headSize + 12;
+		const fontStyle = "700 17px " + (textguifont[1] || "Arial");
+		const textX = headX + headSize + 14;
 		
-		// Draw Name
-		drawText(ctx$5, name, textX, y + 18, fontStyle, "#ffffff", "left", "top", 1, textguishadow[1]);
+		// Draw Name with shadow
+		ctx$5.shadowColor = "rgba(0,0,0,0.8)";
+		ctx$5.shadowBlur = 4;
+		drawText(ctx$5, name, textX, y + 16, fontStyle, "#ffffff", "left", "top", 1, textguishadow[1]);
+		ctx$5.shadowBlur = 0;
 
 		// Health
 		const maxHp = 20;
 		const hp = Math.max(0, Math.min(maxHp, attackedEntity.getHealth?.() ?? attackedEntity.health ?? 0));
 		const ratio = Math.max(0, Math.min(1, hp / maxHp));
 		const barX = textX;
-		const barY = y + h - 24;
-		const barW = w - (textX - x) - 12;
-		const barH = 8;
+		const barY = y + h - 26;
+		const barW = w - (textX - x) - 14;
+		const barH = 10;
 
 		// Health bar bg
-		ctx$5.fillStyle = "rgba(255,255,255,0.1)";
+		ctx$5.fillStyle = "rgba(0,0,0,0.4)";
 		if (ctx$5.roundRect) {
 			ctx$5.beginPath();
-			ctx$5.roundRect(barX, barY, barW, barH, 4);
+			ctx$5.roundRect(barX, barY, barW, barH, 5);
 			ctx$5.fill();
 		} else {
 			ctx$5.fillRect(barX, barY, barW, barH);
@@ -436,25 +506,45 @@ let serverPos = player.pos.clone();
 
 		// Health bar fill
 		const hue = Math.floor(120 * ratio);
-		ctx$5.fillStyle = "hsl(" + hue + ", 90%, 55%)";
-		// Glow
-		ctx$5.shadowColor = "hsl(" + hue + ", 90%, 55%)";
-		ctx$5.shadowBlur = 8;
+		const color = `hsl(${ hue }, 90 %, 50 %)`;
 		
+		ctx$5.save();
 		if (ctx$5.roundRect) {
 			ctx$5.beginPath();
-			ctx$5.roundRect(barX, barY, Math.max(4, Math.floor(barW * ratio)), barH, 4);
+			ctx$5.roundRect(barX, barY, Math.max(6, Math.floor(barW * ratio)), barH, 5);
+			ctx$5.clip();
+		}
+		
+		// Gradient fill
+		const barGrd = ctx$5.createLinearGradient(barX, barY, barX + barW, barY);
+		barGrd.addColorStop(0, `hsl(${ hue }, 90 %, 45 %)`);
+		barGrd.addColorStop(1, `hsl(${ hue }, 90 %, 60 %)`);
+		ctx$5.fillStyle = barGrd;
+		ctx$5.fillRect(barX, barY, barW, barH); // Clipped
+		
+		// Inner glow/shine
+		ctx$5.fillStyle = "rgba(255,255,255,0.2)";
+		ctx$5.fillRect(barX, barY, barW, barH/2);
+		
+		ctx$5.restore();
+
+		// Glow effect
+		ctx$5.shadowColor = color;
+		ctx$5.shadowBlur = 10;
+		ctx$5.fillStyle = "rgba(255,255,255,0)"; // Invisible fill just for shadow
+		if (ctx$5.roundRect) {
+			ctx$5.beginPath();
+			ctx$5.roundRect(barX, barY, Math.max(6, Math.floor(barW * ratio)), barH, 5);
 			ctx$5.fill();
-		} else {
-			ctx$5.fillRect(barX, barY, Math.floor(barW * ratio), barH);
 		}
 		ctx$5.shadowBlur = 0;
 		
 		// HP Text
-		const hpText = Math.round(hp) + " HP";
-		ctx$5.font = "10px " + (textguifont[1] || "Arial");
-		ctx$5.fillStyle = "#ddd";
-		ctx$5.fillText(hpText, barX + barW - ctx$5.measureText(hpText).width, barY - 4);
+		const hpText = Math.round(hp * 10) / 10 + " HP";
+		ctx$5.font = "600 11px " + (textguifont[1] || "Arial");
+		ctx$5.fillStyle = "#eee";
+		ctx$5.textAlign = "right";
+		ctx$5.fillText(hpText, barX + barW, barY - 6);
 	}
 	}
 `);

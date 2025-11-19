@@ -96,23 +96,23 @@ function modifyCode(text) {
 	addDump('damageReduceAmountDump', 'ItemArmor&&\\([a-zA-Z]*\\+\\=[a-zA-Z]*\.([a-zA-Z]*)');
 	addDump('boxGeometryDump', 'w=new Mesh\\(new ([a-zA-Z]*)\\(1');
 	addDump('syncItemDump', 'playerControllerMP\.([a-zA-Z]*)\\(\\),ClientSocket\.sendPacket');
-addDump('healthDump', 'this\\.([a-zA-Z]+)=\\d+\\.\\d+,[a-zA-Z]+\\.([a-zA-Z]+)=\\d+\\.\\d+,[a-zA-Z]+\\.([a-zA-Z]+)=\\d+'); // Health değeri genellikle integer olarak tutulur
+	addDump('healthDump', 'this\\.([a-zA-Z]+)=\\d+\\.\\d+,[a-zA-Z]+\\.([a-zA-Z]+)=\\d+\\.\\d+,[a-zA-Z]+\\.([a-zA-Z]+)=\\d+'); // Health değeri genellikle integer olarak tutulur
 
-addDump('healthDump2', 'getHealth\\(\\)\\{return this\\.([a-zA-Z]+)\\}');
-addDump('healthDump3', '\\.health\\s*=\\s*([a-zA-Z]+)');
-addDump('healthDump4', 'health\\s*:\\s*([a-zA-Z]+)');
+	addDump('healthDump2', 'getHealth\\(\\)\\{return this\\.([a-zA-Z]+)\\}');
+	addDump('healthDump3', '\\.health\\s*=\\s*([a-zA-Z]+)');
+	addDump('healthDump4', 'health\\s*:\\s*([a-zA-Z]+)');
 
-addDump('nameDump', 'getName\\(\\)\\{return this\\.([a-zA-Z]+)\\}');
-addDump('nameDump2', 'username\\s*=\\s*"([^"]+)"');
-addDump('nameDump3', 'displayName\\s*=\\s*"([^"]+)"');
-addDump('nameDump4', 'this\\.([a-zA-Z]+)\\s*=\\s*"([^"]+)"'); // Player name assignment
-addDump('nameDump5', 'name\\s*:\\s*"([^"]+)"');
+	addDump('nameDump', 'getName\\(\\)\\{return this\\.([a-zA-Z]+)\\}');
+	addDump('nameDump2', 'username\\s*=\\s*"([^"]+)"');
+	addDump('nameDump3', 'displayName\\s*=\\s*"([^"]+)"');
+	addDump('nameDump4', 'this\\.([a-zA-Z]+)\\s*=\\s*"([^"]+)"'); // Player name assignment
+	addDump('nameDump5', 'name\\s*:\\s*"([^"]+)"');
 
-addDump('playerEntityDump', 'this\\.([a-zA-Z]+)=new ([a-zA-Z]*Player|Player[a-zA-Z]*)');
-addDump('playerObjectDump', 'this\\.player\\s*=\\s*this\\.([a-zA-Z]+)');
+	addDump('playerEntityDump', 'this\\.([a-zA-Z]+)=new ([a-zA-Z]*Player|Player[a-zA-Z]*)');
+	addDump('playerObjectDump', 'this\\.player\\s*=\\s*this\\.([a-zA-Z]+)');
 
-addDump('entityHealthDump', 'entity\\.([a-zA-Z]+)\\s*===\\s*\\d+');
-addDump('entityNameDump', 'entity\\.([a-zA-Z]+)\\s*===\\s*"[^"]+"'); 
+	addDump('entityHealthDump', 'entity\\.([a-zA-Z]+)\\s*===\\s*\\d+');
+	addDump('entityNameDump', 'entity\\.([a-zA-Z]+)\\s*===\\s*"[^"]+"');
 
 	// PRE
 	addModification('document.addEventListener("DOMContentLoaded",startGame,!1);', `
@@ -336,59 +336,125 @@ let serverPos = player.pos.clone();
 	if (ctx$5 && enabledModules["TargetHUD"] && attackedEntity && attackTime > Date.now()) {
 		const canvasW = ctx$5.canvas.width;
 		const canvasH = ctx$5.canvas.height;
-		const w = 240;
-		const h = 64;
+		const w = 220;
+		const h = 70;
 		const x = (canvasW - w) / 2;
-		const y = canvasH - h - 90;
-		ctx$5.fillStyle = "rgba(0,0,0,0.45)";
-		ctx$5.fillRect(x, y, w, h);
+		const y = canvasH - h - 120;
 
-		const headSize = 44;
-		const headX = x + 10;
-		const headY = y + (h - headSize) / 2;
-		textureManager.headCache = textureManager.headCache || {};
-		textureManager.headCacheLoading = textureManager.headCacheLoading || {};
-		let headImg = textureManager.headCache[attackedEntity.name];
-		if (!headImg && !textureManager.headCacheLoading[attackedEntity.name]) {
-			textureManager.headCacheLoading[attackedEntity.name] = true;
-			const img = new Image();
-			img.crossOrigin = "anonymous";
-			const qName = encodeURIComponent(attackedEntity.name || "Unknown");
-			img.src = "https://minotar.net/avatar/" + qName + "/64.png";
-			img.onload = function() {
-				textureManager.headCache[attackedEntity.name] = img;
-				delete textureManager.headCacheLoading[attackedEntity.name];
-			};
-			img.onerror = function() {
-				delete textureManager.headCacheLoading[attackedEntity.name];
-			};
-		}
-		if (headImg) {
-			drawImage(ctx$5, headImg, headX, headY, headSize, headSize);
+		// Draw background
+		ctx$5.save();
+		if (ctx$5.roundRect) {
+			ctx$5.beginPath();
+			ctx$5.roundRect(x, y, w, h, 12);
+			ctx$5.fillStyle = "rgba(15, 15, 15, 0.7)";
+			ctx$5.shadowColor = "rgba(0,0,0,0.5)";
+			ctx$5.shadowBlur = 15;
+			ctx$5.fill();
 		} else {
-			ctx$5.fillStyle = "rgba(255,255,255,0.12)";
+			ctx$5.fillStyle = "rgba(15, 15, 15, 0.7)";
+			ctx$5.fillRect(x, y, w, h);
+		}
+		ctx$5.restore();
+
+		const headSize = 48;
+		const headX = x + 12;
+		const headY = y + (h - headSize) / 2;
+
+		// Try to get skin from entity
+		let skinImage = null;
+		try {
+			if (attackedEntity.mesh && attackedEntity.mesh.material) {
+				const mat = Array.isArray(attackedEntity.mesh.material) ? attackedEntity.mesh.material[0] : attackedEntity.mesh.material;
+				if (mat && mat.map && mat.map.image) {
+					skinImage = mat.map.image;
+				}
+			}
+			if (!skinImage && attackedEntity.skin && attackedEntity.skin.image) {
+				skinImage = attackedEntity.skin.image;
+			}
+			// Fallback to profile skin if available
+			if (!skinImage && attackedEntity.profile && attackedEntity.profile.skin) {
+				if (attackedEntity.profile.skin.image) skinImage = attackedEntity.profile.skin.image;
+			}
+		} catch (e) {}
+
+		if (skinImage) {
+			try {
+				ctx$5.save();
+				// Clip rounded rect for head
+				ctx$5.beginPath();
+				if (ctx$5.roundRect) ctx$5.roundRect(headX, headY, headSize, headSize, 6);
+				else ctx$5.rect(headX, headY, headSize, headSize);
+				ctx$5.clip();
+
+				ctx$5.imageSmoothingEnabled = false;
+				// Draw head layer
+				ctx$5.drawImage(skinImage, 8, 8, 8, 8, headX, headY, headSize, headSize);
+				// Draw hat layer
+				ctx$5.drawImage(skinImage, 40, 8, 8, 8, headX, headY, headSize, headSize);
+				ctx$5.restore();
+			} catch (e) {
+				ctx$5.fillStyle = "#333";
+				ctx$5.fillRect(headX, headY, headSize, headSize);
+			}
+		} else {
+			ctx$5.fillStyle = "#333";
 			ctx$5.fillRect(headX, headY, headSize, headSize);
+			// Draw ?
+			ctx$5.fillStyle = "#fff";
+			ctx$5.font = "20px Arial";
+			ctx$5.textAlign = "center";
+			ctx$5.textBaseline = "middle";
+			ctx$5.fillText("?", headX + headSize/2, headY + headSize/2);
 		}
 
 		const name = attackedEntity.name || "Unknown";
-		const fontStyle = Math.max(12, textguisize[1]) + "px " + textguifont[1];
+		const fontStyle = "600 16px " + (textguifont[1] || "Arial");
 		const textX = headX + headSize + 12;
-		drawText(ctx$5, name, textX, y + 14, fontStyle, "#ffffff", "left", "top", 1, textguishadow[1]);
+		
+		// Draw Name
+		drawText(ctx$5, name, textX, y + 18, fontStyle, "#ffffff", "left", "top", 1, textguishadow[1]);
+
+		// Health
 		const maxHp = 20;
 		const hp = Math.max(0, Math.min(maxHp, attackedEntity.getHealth?.() ?? attackedEntity.health ?? 0));
 		const ratio = Math.max(0, Math.min(1, hp / maxHp));
 		const barX = textX;
-		const barY = y + h - 22;
-		const barW = x + w - barX - 12;
-		const barH = 10;
-		ctx$5.fillStyle = "rgba(255,255,255,0.15)";
-		ctx$5.fillRect(barX, barY, barW, barH);
+		const barY = y + h - 24;
+		const barW = w - (textX - x) - 12;
+		const barH = 8;
+
+		// Health bar bg
+		ctx$5.fillStyle = "rgba(255,255,255,0.1)";
+		if (ctx$5.roundRect) {
+			ctx$5.beginPath();
+			ctx$5.roundRect(barX, barY, barW, barH, 4);
+			ctx$5.fill();
+		} else {
+			ctx$5.fillRect(barX, barY, barW, barH);
+		}
+
+		// Health bar fill
 		const hue = Math.floor(120 * ratio);
-		ctx$5.fillStyle = "hsl(" + hue + ",80%,50%)";
-		ctx$5.fillRect(barX, barY, Math.floor(barW * ratio), barH);
-		ctx$5.strokeStyle = "rgba(255,255,255,0.25)";
-		ctx$5.lineWidth = 1;
-		ctx$5.strokeRect(barX, barY, barW, barH);
+		ctx$5.fillStyle = "hsl(" + hue + ", 90%, 55%)";
+		// Glow
+		ctx$5.shadowColor = "hsl(" + hue + ", 90%, 55%)";
+		ctx$5.shadowBlur = 8;
+		
+		if (ctx$5.roundRect) {
+			ctx$5.beginPath();
+			ctx$5.roundRect(barX, barY, Math.max(4, Math.floor(barW * ratio)), barH, 4);
+			ctx$5.fill();
+		} else {
+			ctx$5.fillRect(barX, barY, Math.floor(barW * ratio), barH);
+		}
+		ctx$5.shadowBlur = 0;
+		
+		// HP Text
+		const hpText = Math.round(hp) + " HP";
+		ctx$5.font = "10px " + (textguifont[1] || "Arial");
+		ctx$5.fillStyle = "#ddd";
+		ctx$5.fillText(hpText, barX + barW - ctx$5.measureText(hpText).width, barY - 4);
 	}
 	}
 `);
@@ -3207,11 +3273,11 @@ const survival = new Module("SurvivalMode", function(callback) {
 						});
 					}
 				});
-				
+
 				console.log("Updating Scripts category:", scripts);
-				
+
 				if (scripts.length > 0) {
-					
+
 					// Recreate category panel if it exists
 					if (categoryPanel) {
 						const oldPanel = categoryPanel;
@@ -3439,7 +3505,7 @@ const survival = new Module("SurvivalMode", function(callback) {
 		// === Create Category Panel ===
 		function createCategoryPanel() {
 			const { panel, content } = createPanel("Impact V6", 40, 40, 220);
-			const baseCategories = ["Combat", "Movement", "Player", "Render", "World","Client","Minigames", "Misc","Exploit","Broken"];
+			const baseCategories = ["Combat", "Movement", "Player", "Render", "World", "Client", "Minigames", "Misc", "Exploit", "Broken"];
 			const categories = [...baseCategories];
 
 			if (scripts > 0) {
@@ -3494,205 +3560,205 @@ const survival = new Module("SurvivalMode", function(callback) {
 		}
 
 		// === Create Module Row ===
-function createModuleRow(name, mod, content) {
-    const row = document.createElement("div");
-    row.className = "vape-module-row";
+		function createModuleRow(name, mod, content) {
+			const row = document.createElement("div");
+			row.className = "vape-module-row";
 
-    const left = document.createElement("div");
-    left.className = "vape-module-left";
+			const left = document.createElement("div");
+			left.className = "vape-module-left";
 
-    const icon = document.createElement("div");
-    icon.className = "vape-module-icon";
-    icon.textContent = name[0];
+			const icon = document.createElement("div");
+			icon.className = "vape-module-icon";
+			icon.textContent = name[0];
 
-    const title = document.createElement("div");
-    title.className = "vape-module-title";
-    title.textContent = name;
+			const title = document.createElement("div");
+			title.className = "vape-module-title";
+			title.textContent = name;
 
-    left.appendChild(icon);
-    left.appendChild(title);
+			left.appendChild(icon);
+			left.appendChild(title);
 
-    const right = document.createElement("div");
-    right.className = "vape-module-right";
+			const right = document.createElement("div");
+			right.className = "vape-module-right";
 
-    // Bind display - FIXED VERSION!
-    const bindDisplay = document.createElement("span");
-    bindDisplay.className = "vape-bind-display";
+			// Bind display - FIXED VERSION!
+			const bindDisplay = document.createElement("span");
+			bindDisplay.className = "vape-bind-display";
 
-    // FIXED: Check if module has a bind when creating the display
-    if (mod.bind && mod.bind !== "") {
-        bindDisplay.textContent = mod.bind.toUpperCase();
-        bindDisplay.style.cssText = "font-size:10px;color:#E6E9EA;margin-right:8px;min-width:30px;text-align:center;flex-shrink:0;background:rgba(255,255,255,0.08);padding:3px 8px;border-radius:4px;font-weight:700;";
-    } else {
-        bindDisplay.textContent = "";
-        bindDisplay.style.cssText = "font-size:10px;color:#E6E9EA;margin-right:8px;min-width:0;text-align:center;flex-shrink:0;";
-    }
+			// FIXED: Check if module has a bind when creating the display
+			if (mod.bind && mod.bind !== "") {
+				bindDisplay.textContent = mod.bind.toUpperCase();
+				bindDisplay.style.cssText = "font-size:10px;color:#E6E9EA;margin-right:8px;min-width:30px;text-align:center;flex-shrink:0;background:rgba(255,255,255,0.08);padding:3px 8px;border-radius:4px;font-weight:700;";
+			} else {
+				bindDisplay.textContent = "";
+				bindDisplay.style.cssText = "font-size:10px;color:#E6E9EA;margin-right:8px;min-width:0;text-align:center;flex-shrink:0;";
+			}
 
-    const toggle = document.createElement("div");
-    toggle.className = "vape-toggle" + (mod.enabled ? " on" : "");
-    const knob = document.createElement("div");
-    knob.className = "vape-toggle-knob";
-    toggle.appendChild(knob);
+			const toggle = document.createElement("div");
+			toggle.className = "vape-toggle" + (mod.enabled ? " on" : "");
+			const knob = document.createElement("div");
+			knob.className = "vape-toggle-knob";
+			toggle.appendChild(knob);
 
-    toggle.onclick = (e) => {
-        e.stopPropagation();
-        if (mod.toggle) {
-            mod.toggle();
-            toggle.classList.toggle("on", mod.enabled);
-            showNotif(name + " " + (mod.enabled ? "enabled" : "disabled"), mod.enabled ? "success" : "error");
-        }
-    };
+			toggle.onclick = (e) => {
+				e.stopPropagation();
+				if (mod.toggle) {
+					mod.toggle();
+					toggle.classList.toggle("on", mod.enabled);
+					showNotif(name + " " + (mod.enabled ? "enabled" : "disabled"), mod.enabled ? "success" : "error");
+				}
+			};
 
-    right.appendChild(bindDisplay);
-    right.appendChild(toggle);
-    row.appendChild(left);
-    row.appendChild(right);
+			right.appendChild(bindDisplay);
+			right.appendChild(toggle);
+			row.appendChild(left);
+			row.appendChild(right);
 
-    const optionsBox = document.createElement("div");
-    optionsBox.className = "vape-options";
-    optionsBox.style.display = "none";
+			const optionsBox = document.createElement("div");
+			optionsBox.className = "vape-options";
+			optionsBox.style.display = "none";
 
-    const toggleModule = (e) => {
-        const t = e.target;
-        if (t.tagName === "INPUT" || t.classList.contains("vape-toggle") ||
-            t.classList.contains("vape-toggle-knob") || t.classList.contains("vape-bind-key-display") ||
-            t.classList.contains("vape-slider")) return;
-        if (mod.toggle) {
-            mod.toggle();
-            toggle.classList.toggle("on", mod.enabled);
-            showNotif(name + " " + (mod.enabled ? "enabled" : "disabled"), mod.enabled ? "success" : "error");
-        }
-    };
+			const toggleModule = (e) => {
+				const t = e.target;
+				if (t.tagName === "INPUT" || t.classList.contains("vape-toggle") ||
+					t.classList.contains("vape-toggle-knob") || t.classList.contains("vape-bind-key-display") ||
+					t.classList.contains("vape-slider")) return;
+				if (mod.toggle) {
+					mod.toggle();
+					toggle.classList.toggle("on", mod.enabled);
+					showNotif(name + " " + (mod.enabled ? "enabled" : "disabled"), mod.enabled ? "success" : "error");
+				}
+			};
 
-    row.onclick = toggleModule;
-    row.onmousedown = (e) => {
-        if (e.button === 1) {
-            e.preventDefault();
-            bindDisplay.textContent = "waiting...";
-            bindDisplay.style.color = "#0FB3A0";
-            bindingModule = { name, mod, bindDisplay };
-        }
-    };
+			row.onclick = toggleModule;
+			row.onmousedown = (e) => {
+				if (e.button === 1) {
+					e.preventDefault();
+					bindDisplay.textContent = "waiting...";
+					bindDisplay.style.color = "#0FB3A0";
+					bindingModule = { name, mod, bindDisplay };
+				}
+			};
 
-    // Right click to show options
-    row.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        const isVisible = optionsBox.style.display === "flex";
-        optionsBox.style.display = isVisible ? "none" : "flex";
+			// Right click to show options
+			row.addEventListener("contextmenu", (e) => {
+				e.preventDefault();
+				const isVisible = optionsBox.style.display === "flex";
+				optionsBox.style.display = isVisible ? "none" : "flex";
 
-        // Populate options if first time
-        if (!isVisible && optionsBox.children.length === 0) {
-            // Bind display at top - FIXED VERSION
-            const bindKeyDisplay = document.createElement("div");
-            bindKeyDisplay.className = "vape-bind-key-display";
+				// Populate options if first time
+				if (!isVisible && optionsBox.children.length === 0) {
+					// Bind display at top - FIXED VERSION
+					const bindKeyDisplay = document.createElement("div");
+					bindKeyDisplay.className = "vape-bind-key-display";
 
-            // FIX: Show current bind or "CLICK TO BIND"
-            if (mod.bind && mod.bind !== "") {
-                bindKeyDisplay.textContent = mod.bind.toUpperCase();
-                bindKeyDisplay.style.cssText = "background:rgba(255,255,255,0.08);padding:6px 12px;border-radius:6px;font-weight:700;font-size:11px;text-align:center;margin-bottom:8px;cursor:pointer;";
-            } else {
-                bindKeyDisplay.textContent = "CLICK TO BIND";
-                bindKeyDisplay.style.cssText = "background:rgba(255,255,255,0.05);padding:6px 12px;border-radius:6px;font-weight:700;font-size:11px;text-align:center;margin-bottom:8px;cursor:pointer;color:#8F9498;";
-            }
+					// FIX: Show current bind or "CLICK TO BIND"
+					if (mod.bind && mod.bind !== "") {
+						bindKeyDisplay.textContent = mod.bind.toUpperCase();
+						bindKeyDisplay.style.cssText = "background:rgba(255,255,255,0.08);padding:6px 12px;border-radius:6px;font-weight:700;font-size:11px;text-align:center;margin-bottom:8px;cursor:pointer;";
+					} else {
+						bindKeyDisplay.textContent = "CLICK TO BIND";
+						bindKeyDisplay.style.cssText = "background:rgba(255,255,255,0.05);padding:6px 12px;border-radius:6px;font-weight:700;font-size:11px;text-align:center;margin-bottom:8px;cursor:pointer;color:#8F9498;";
+					}
 
-            bindKeyDisplay.title = "Click to change bind";
-            bindKeyDisplay.addEventListener("click", (e) => {
-                e.stopPropagation();
-                bindKeyDisplay.textContent = "WAITING...";
-                bindKeyDisplay.style.background = "rgba(241,196,15,0.2)";
-                bindKeyDisplay.style.color = "#f1c40f";
-                bindingModule = { name, mod, bindDisplay, optionBindDisplay: bindKeyDisplay };
-            });
-            optionsBox.appendChild(bindKeyDisplay);
+					bindKeyDisplay.title = "Click to change bind";
+					bindKeyDisplay.addEventListener("click", (e) => {
+						e.stopPropagation();
+						bindKeyDisplay.textContent = "WAITING...";
+						bindKeyDisplay.style.background = "rgba(241,196,15,0.2)";
+						bindKeyDisplay.style.color = "#f1c40f";
+						bindingModule = { name, mod, bindDisplay, optionBindDisplay: bindKeyDisplay };
+					});
+					optionsBox.appendChild(bindKeyDisplay);
 
-            // Module options
-            if (mod.options) {
-                Object.entries(mod.options).forEach(([key, opt]) => {
-                    const [type, val, label] = opt;
-                    const line = document.createElement("div");
-                    line.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-top:8px;";
+					// Module options
+					if (mod.options) {
+						Object.entries(mod.options).forEach(([key, opt]) => {
+							const [type, val, label] = opt;
+							const line = document.createElement("div");
+							line.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-top:8px;";
 
-                    const labelSpan = document.createElement("span");
-                    labelSpan.textContent = label || key;
-                    labelSpan.style.cssText = "font-size:12px;color:#E6E9EA;";
-                    line.appendChild(labelSpan);
+							const labelSpan = document.createElement("span");
+							labelSpan.textContent = label || key;
+							labelSpan.style.cssText = "font-size:12px;color:#E6E9EA;";
+							line.appendChild(labelSpan);
 
-                    if (type === Boolean) {
-                        const optToggle = document.createElement("div");
-                        optToggle.className = "vape-toggle" + (val ? " on" : "");
-                        optToggle.style.cssText = "width:42px;height:22px;border-radius:20px;background:rgba(255,255,255,0.05);position:relative;transition:all 0.18s;cursor:pointer;flex-shrink:0;";
-                        if (val) {
-                            optToggle.style.background = "var(--vape-accent, #0FB3A0)";
-                        }
-                        const optKnob = document.createElement("div");
-                        optKnob.className = "vape-toggle-knob";
-                        optKnob.style.cssText = "position:absolute;left:" + (val ? "23px" : "3px") + ";top:3px;width:16px;height:16px;border-radius:50%;background:" + (val ? "white" : "#0d0f10") + ";box-shadow:0 4px 10px rgba(0,0,0,0.6);transition:all 0.18s;";
-                        optToggle.appendChild(optKnob);
-                        optToggle.addEventListener("click", (e) => {
-                            e.stopPropagation();
-                            opt[1] = !opt[1];
-                            if (opt[1]) {
-                                optToggle.style.background = "var(--vape-accent, #0FB3A0)";
-                                optKnob.style.left = "23px";
-                                optKnob.style.background = "white";
-                            } else {
-                                optToggle.style.background = "rgba(255,255,255,0.05)";
-                                optKnob.style.left = "3px";
-                                optKnob.style.background = "#0d0f10";
-                            }
-                        });
-                        line.appendChild(optToggle);
-                    } else if (type === Number) {
-                        const sliderWrap = document.createElement("div");
-                        sliderWrap.style.cssText = "flex:1;margin-left:12px;display:flex;align-items:center;gap:8px;max-width:150px;";
+							if (type === Boolean) {
+								const optToggle = document.createElement("div");
+								optToggle.className = "vape-toggle" + (val ? " on" : "");
+								optToggle.style.cssText = "width:42px;height:22px;border-radius:20px;background:rgba(255,255,255,0.05);position:relative;transition:all 0.18s;cursor:pointer;flex-shrink:0;";
+								if (val) {
+									optToggle.style.background = "var(--vape-accent, #0FB3A0)";
+								}
+								const optKnob = document.createElement("div");
+								optKnob.className = "vape-toggle-knob";
+								optKnob.style.cssText = "position:absolute;left:" + (val ? "23px" : "3px") + ";top:3px;width:16px;height:16px;border-radius:50%;background:" + (val ? "white" : "#0d0f10") + ";box-shadow:0 4px 10px rgba(0,0,0,0.6);transition:all 0.18s;";
+								optToggle.appendChild(optKnob);
+								optToggle.addEventListener("click", (e) => {
+									e.stopPropagation();
+									opt[1] = !opt[1];
+									if (opt[1]) {
+										optToggle.style.background = "var(--vape-accent, #0FB3A0)";
+										optKnob.style.left = "23px";
+										optKnob.style.background = "white";
+									} else {
+										optToggle.style.background = "rgba(255,255,255,0.05)";
+										optKnob.style.left = "3px";
+										optKnob.style.background = "#0d0f10";
+									}
+								});
+								line.appendChild(optToggle);
+							} else if (type === Number) {
+								const sliderWrap = document.createElement("div");
+								sliderWrap.style.cssText = "flex:1;margin-left:12px;display:flex;align-items:center;gap:8px;max-width:150px;";
 
-                        const slider = document.createElement("input");
-                        slider.type = "range";
-                        slider.className = "vape-slider";
-                        const [min, max, step] = opt.range ?? [0, 10, 0.1];
-                        slider.min = min;
-                        slider.max = max;
-                        slider.step = step;
-                        slider.value = val;
+								const slider = document.createElement("input");
+								slider.type = "range";
+								slider.className = "vape-slider";
+								const [min, max, step] = opt.range ?? [0, 10, 0.1];
+								slider.min = min;
+								slider.max = max;
+								slider.step = step;
+								slider.value = val;
 
-                        const valueSpan = document.createElement("span");
-                        valueSpan.textContent = val;
-                        valueSpan.style.cssText = "color:#8F9498;font-size:11px;min-width:35px;text-align:right;font-weight:600;";
+								const valueSpan = document.createElement("span");
+								valueSpan.textContent = val;
+								valueSpan.style.cssText = "color:#8F9498;font-size:11px;min-width:35px;text-align:right;font-weight:600;";
 
-                        slider.addEventListener("click", (e) => e.stopPropagation());
-                        slider.addEventListener("mousedown", (e) => e.stopPropagation());
-                        slider.oninput = () => {
-                            opt[1] = parseFloat(slider.value);
-                            valueSpan.textContent = slider.value;
-                        };
+								slider.addEventListener("click", (e) => e.stopPropagation());
+								slider.addEventListener("mousedown", (e) => e.stopPropagation());
+								slider.oninput = () => {
+									opt[1] = parseFloat(slider.value);
+									valueSpan.textContent = slider.value;
+								};
 
-                        sliderWrap.appendChild(slider);
-                        sliderWrap.appendChild(valueSpan);
-                        line.appendChild(sliderWrap);
-                    } else if (type === String) {
-                        const input = document.createElement("input");
-                        input.type = "text";
-                        input.value = val;
-                        input.style.cssText = "flex:1;margin-left:8px;max-width:150px;background:rgba(255,255,255,0.05);color:#E6E9EA;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:4px 8px;font-size:12px;outline:none;";
-                        input.addEventListener("click", (e) => e.stopPropagation());
-                        input.addEventListener("focus", () => {
-                            input.style.borderColor = "var(--vape-accent, #0FB3A0)";
-                        });
-                        input.addEventListener("blur", () => {
-                            input.style.borderColor = "rgba(255,255,255,0.1)";
-                        });
-                        input.onchange = () => { opt[1] = input.value; };
-                        line.appendChild(input);
-                    }
+								sliderWrap.appendChild(slider);
+								sliderWrap.appendChild(valueSpan);
+								line.appendChild(sliderWrap);
+							} else if (type === String) {
+								const input = document.createElement("input");
+								input.type = "text";
+								input.value = val;
+								input.style.cssText = "flex:1;margin-left:8px;max-width:150px;background:rgba(255,255,255,0.05);color:#E6E9EA;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:4px 8px;font-size:12px;outline:none;";
+								input.addEventListener("click", (e) => e.stopPropagation());
+								input.addEventListener("focus", () => {
+									input.style.borderColor = "var(--vape-accent, #0FB3A0)";
+								});
+								input.addEventListener("blur", () => {
+									input.style.borderColor = "rgba(255,255,255,0.1)";
+								});
+								input.onchange = () => { opt[1] = input.value; };
+								line.appendChild(input);
+							}
 
-                    optionsBox.appendChild(line);
-                });
-            }
-        }
-    });
+							optionsBox.appendChild(line);
+						});
+					}
+				}
+			});
 
-    return { row, optionsBox };
-}
+			return { row, optionsBox };
+		}
 
 		// === Close Panel with Animation ===
 		function closePanelWithAnimation(panel, callback) {
@@ -3706,7 +3772,7 @@ function createModuleRow(name, mod, content) {
 		// === Open Module Panel ===
 		function openModulePanel(category) {
 			console.log("Opening module panel for category:", category);
-			
+
 			// Close if already open
 			if (modulePanels[category]) {
 				closePanelWithAnimation(modulePanels[category], () => {
@@ -3849,7 +3915,7 @@ function createModuleRow(name, mod, content) {
 		// === Toggle ClickGUI ===
 		let visible = false;
 		document.addEventListener("keydown", (e) => {
-			if (e.key === "Insert") { 
+			if (e.key === "Insert") {
 				visible = !visible;
 
 				if (visible) {

@@ -404,7 +404,7 @@ let serverPos = player.pos.clone();
 		ctx$5.shadowBlur = 0;
 
 		// Health
-		const maxHp = 20;
+		const maxHp = attackedEntity.maxHealth || 20;
 		const hp = Math.max(0, Math.min(maxHp, attackedEntity.getHealth?.() ?? attackedEntity.health ?? 0));
 		const ratio = Math.max(0, Math.min(1, hp / maxHp));
 		const barX = textX;
@@ -1627,8 +1627,10 @@ h.addVelocity(-Math.sin(this.yaw) * g * .5, .1, -Math.cos(this.yaw) * g * .5);
 							})
 						}));
 						player.attackDump(entity);
-						attackedEntity = entity;
-						attackTime = Date.now() + 1500;
+						if (first) {
+							attackedEntity = entity;
+							attackTime = Date.now() + 1500;
+						}
 					}
 				}
 			}

@@ -404,7 +404,7 @@ let serverPos = player.pos.clone();
 		ctx$5.shadowBlur = 0;
 
 		// Health
-		const maxHp = attackedEntity.maxHealth || 20;
+		const maxHp = 20;
 		const hp = Math.max(0, Math.min(maxHp, attackedEntity.getHealth?.() ?? attackedEntity.health ?? 0));
 		const ratio = Math.max(0, Math.min(1, hp / maxHp));
 		const barX = textX;
@@ -424,8 +424,7 @@ let serverPos = player.pos.clone();
 
 		// Health bar fill
 		const hue = Math.floor(120 * ratio);
-		// Escape backticks for template string
-		const color = \`hsl(\${ hue }, 90 %, 50 %)\`;
+		const color = \`hsl(\${ hue }, 90%, 50%)\`;
 		
 		ctx$5.save();
 		if (ctx$5.roundRect) {
@@ -436,8 +435,8 @@ let serverPos = player.pos.clone();
 		
 		// Gradient fill
 		const barGrd = ctx$5.createLinearGradient(barX, barY, barX + barW, barY);
-		barGrd.addColorStop(0, \`hsl(\${ hue }, 90 %, 45 %)\`);
-		barGrd.addColorStop(1, \`hsl(\${ hue }, 90 %, 60 %)\`);
+		barGrd.addColorStop(0, \`hsl(\${ hue }, 90%, 45%)\`);
+		barGrd.addColorStop(1, \`hsl(\${ hue }, 90%, 60%)\`);
 		ctx$5.fillStyle = barGrd;
 		ctx$5.fillRect(barX, barY, barW, barH); // Clipped
 		
@@ -1627,10 +1626,8 @@ h.addVelocity(-Math.sin(this.yaw) * g * .5, .1, -Math.cos(this.yaw) * g * .5);
 							})
 						}));
 						player.attackDump(entity);
-						if (first) {
-							attackedEntity = entity;
-							attackTime = Date.now() + 1500;
-						}
+						attackedEntity = entity;
+						attackTime = Date.now() + 1500;
 					}
 				}
 			}

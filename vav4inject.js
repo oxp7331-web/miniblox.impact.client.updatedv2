@@ -394,7 +394,7 @@ let serverPos = player.pos.clone();
 		ctx$5.restore();
 
 		const name = attackedEntity.name || "Unknown";
-		const fontStyle = "700 17px " + (textguifont[1] || "Arial");
+		const fontStyle = "600 17px " + (textguifont[1] || "Poppins");
 		const textX = headX + headSize + 14;
 		
 		// Draw Name with shadow
@@ -459,7 +459,7 @@ let serverPos = player.pos.clone();
 		
 		// HP Text
 		const hpText = Math.round(hp * 10) / 10 + " HP";
-		ctx$5.font = "600 11px " + (textguifont[1] || "Arial");
+		ctx$5.font = "600 12px " + (textguifont[1] || "Poppins");
 		ctx$5.fillStyle = "#eee";
 		ctx$5.textAlign = "right";
 		ctx$5.fillText(hpText, barX + barW, barY - 6);
@@ -3250,7 +3250,7 @@ const survival = new Module("SurvivalMode", function(callback) {
 (async function () {
 	try {
 		const fontLink = document.createElement("link");
-		fontLink.href = "https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap";
+		fontLink.href = "https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap";
 		fontLink.rel = "stylesheet";
 		document.head.appendChild(fontLink);
 

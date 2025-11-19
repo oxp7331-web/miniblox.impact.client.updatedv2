@@ -334,12 +334,19 @@ let serverPos = player.pos.clone();
 		ctx$5.shadowBlur = 0;
 
 	if (ctx$5 && enabledModules["TargetHUD"] && attackedEntity && attackTime > Date.now()) {
+		// Fix: Don't show HUD if the attacked entity is the player themselves
+		if (attackedEntity === player) return;
+
 		const canvasW = ctx$5.canvas.width;
 		const canvasH = ctx$5.canvas.height;
 		const w = 220;
 		const h = 70;
 		const x = (canvasW - w) / 2;
 		const y = canvasH - h - 120;
+
+		// Enable smoothing for better quality (fixes "pixelated" look)
+		ctx$5.imageSmoothingEnabled = true;
+		ctx$5.imageSmoothingQuality = "high";
 
 		// Draw background with gradient
 		ctx$5.save();
@@ -367,113 +374,24 @@ let serverPos = player.pos.clone();
 		const headX = x + 12;
 		const headY = y + (h - headSize) / 2;
 
-		// --- Skin Finder Logic ---
-		let skinImage = null;
-		
-		// Helper to check if a value is a skin data URI
-		const isSkinData = (val) => typeof val === 'string' && val.startsWith('data:image/png;base64');
-
-		// 1. Check Three.js mesh texture (Standard)
-		try {
-			if (attackedEntity.mesh && attackedEntity.mesh.material) {
-				const mat = Array.isArray(attackedEntity.mesh.material) ? attackedEntity.mesh.material[0] : attackedEntity.mesh.material;
-				if (mat && mat.map && mat.map.image) {
-					skinImage = mat.map.image;
-				}
-			}
-		} catch(e) {}
-
-		// 2. Dynamic Search for Base64 Data (User suggested)
-		if (!skinImage) {
-			try {
-				// Use cached property if available
-				if (attackedEntity._cachedSkinProp) {
-					const keys = attackedEntity._cachedSkinProp.split('.');
-					let val = attackedEntity;
-					for (const k of keys) val = val?.[k];
-					
-					if (isSkinData(val)) {
-						if (!attackedEntity._cachedSkinImage) {
-							const img = new Image();
-							img.src = val;
-							attackedEntity._cachedSkinImage = img;
-						}
-						skinImage = attackedEntity._cachedSkinImage;
-					}
-				} 
-				// Scan properties if not cached
-				else {
-					const scanObject = (obj, path = "") => {
-						if (!obj || typeof obj !== 'object') return null;
-						// Limit depth to avoid performance hit
-						if (path.split('.').length > 2) return null;
-
-						for (const key in obj) {
-							try {
-								const val = obj[key];
-								const currentPath = path ? \`\${ path }.\${ key }\` : key;
-								
-								if (isSkinData(val)) {
-									return currentPath;
-								}
-								// Recursive scan for objects (shallow)
-								if (val && typeof val === 'object' && !Array.isArray(val)) {
-									// Skip huge objects or circular refs if possible
-									if (key === 'mesh' || key === 'game' || key === 'world') continue; 
-									const found = scanObject(val, currentPath);
-									if (found) return found;
-								}
-							} catch(e) {}
-						}
-						return null;
-					};
-
-					const foundProp = scanObject(attackedEntity);
-					if (foundProp) {
-						attackedEntity._cachedSkinProp = foundProp;
-						// game.chat.addChat({text: "Found skin at: " + foundProp, color: "lime"}); // Debug
-					}
-				}
-			} catch(e) {}
-		}
-		// -------------------------
-
-		if (skinImage) {
-			try {
-				ctx$5.save();
-				// Clip rounded rect for head
-				ctx$5.beginPath();
-				if (ctx$5.roundRect) ctx$5.roundRect(headX, headY, headSize, headSize, 8);
-				else ctx$5.rect(headX, headY, headSize, headSize);
-				ctx$5.clip();
-
-				ctx$5.imageSmoothingEnabled = false;
-				// Draw head layer
-				ctx$5.drawImage(skinImage, 8, 8, 8, 8, headX, headY, headSize, headSize);
-				// Draw hat layer
-				ctx$5.drawImage(skinImage, 40, 8, 8, 8, headX, headY, headSize, headSize);
-				ctx$5.restore();
-			} catch (e) {
-				// Fallback if drawing fails
-				ctx$5.fillStyle = "#222";
-				ctx$5.fillRect(headX, headY, headSize, headSize);
-			}
+		// Simple Head Placeholder (User requested to remove skin fetching)
+		ctx$5.save();
+		ctx$5.fillStyle = "#2a2a2a";
+		if (ctx$5.roundRect) {
+			ctx$5.beginPath();
+			ctx$5.roundRect(headX, headY, headSize, headSize, 8);
+			ctx$5.fill();
 		} else {
-			// Placeholder
-			ctx$5.fillStyle = "#222";
-			if (ctx$5.roundRect) {
-				ctx$5.beginPath();
-				ctx$5.roundRect(headX, headY, headSize, headSize, 8);
-				ctx$5.fill();
-			} else {
-				ctx$5.fillRect(headX, headY, headSize, headSize);
-			}
-			ctx$5.fillStyle = "#555";
-			ctx$5.font = "bold 24px Arial";
-			ctx$5.textAlign = "center";
-			ctx$5.textBaseline = "middle";
-			ctx$5.fillText("?", headX + headSize/2, headY + headSize/2);
+			ctx$5.fillRect(headX, headY, headSize, headSize);
 		}
+		
+		// Draw a simple question mark
+		ctx$5.fillStyle = "#666";
+		ctx$5.font = "bold 24px Arial";
+		ctx$5.textAlign = "center";
+		ctx$5.textBaseline = "middle";
+		ctx$5.fillText("?", headX + headSize/2, headY + headSize/2);
+		ctx$5.restore();
 
 		const name = attackedEntity.name || "Unknown";
 		const fontStyle = "700 17px " + (textguifont[1] || "Arial");
@@ -506,6 +424,7 @@ let serverPos = player.pos.clone();
 
 		// Health bar fill
 		const hue = Math.floor(120 * ratio);
+		// Escape backticks for template string
 		const color = \`hsl(\${ hue }, 90 %, 50 %)\`;
 		
 		ctx$5.save();

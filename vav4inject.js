@@ -411,7 +411,7 @@ let serverPos = player.pos.clone();
 						for (const key in obj) {
 							try {
 								const val = obj[key];
-								const currentPath = path ? `${ path }.${ key }` : key;
+								const currentPath = path ? \`\${ path }.\${ key }\` : key;
 								
 								if (isSkinData(val)) {
 									return currentPath;
@@ -506,7 +506,7 @@ let serverPos = player.pos.clone();
 
 		// Health bar fill
 		const hue = Math.floor(120 * ratio);
-		const color = `hsl(${ hue }, 90 %, 50 %)`;
+		const color = \`hsl(\${ hue }, 90 %, 50 %)\`;
 		
 		ctx$5.save();
 		if (ctx$5.roundRect) {
@@ -517,8 +517,8 @@ let serverPos = player.pos.clone();
 		
 		// Gradient fill
 		const barGrd = ctx$5.createLinearGradient(barX, barY, barX + barW, barY);
-		barGrd.addColorStop(0, `hsl(${ hue }, 90 %, 45 %)`);
-		barGrd.addColorStop(1, `hsl(${ hue }, 90 %, 60 %)`);
+		barGrd.addColorStop(0, \`hsl(\${ hue }, 90 %, 45 %)\`);
+		barGrd.addColorStop(1, \`hsl(\${ hue }, 90 %, 60 %)\`);
 		ctx$5.fillStyle = barGrd;
 		ctx$5.fillRect(barX, barY, barW, barH); // Clipped
 		
